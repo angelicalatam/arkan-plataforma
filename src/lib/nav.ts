@@ -5,6 +5,8 @@ import {
   Activity,
   Building2,
   FileText,
+  BookOpen,
+  ShoppingBag,
   HardHat,
   ShoppingCart,
   Package,
@@ -49,6 +51,8 @@ export const navGroups: NavGroup[] = [
     title: "Presupuestos y obras",
     items: [
       { label: "Presupuestos", href: "/presupuestos", icon: FileText },
+      { label: "Banco de precios", href: "/banco-precios", icon: BookOpen },
+      { label: "Productos", href: "/productos", icon: ShoppingBag },
       { label: "Obras", href: "/obras", icon: HardHat },
       { label: "Compras", href: "/compras", icon: ShoppingCart },
       { label: "Materiales", href: "/materiales", icon: Package },
