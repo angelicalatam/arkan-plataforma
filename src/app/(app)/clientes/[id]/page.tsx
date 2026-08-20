@@ -12,6 +12,7 @@ import {
   CalendarClock,
 } from "lucide-react";
 import { getCustomer, getCustomerActivities, getTeamMembers } from "@/lib/crm/queries";
+import { getCustomerFiles } from "@/lib/files/queries";
 import { isGoogleConfigured } from "@/lib/google/config";
 import { getGoogleStatus } from "@/lib/google/actions";
 import { isEmailConfigured } from "@/lib/email/config";
@@ -23,6 +24,7 @@ import { formatCurrency, formatDate, initials } from "@/lib/format";
 import { AddActivity } from "./AddActivity";
 import { DeleteCustomerButton } from "./DeleteCustomerButton";
 import { ScheduleButton } from "./ScheduleButton";
+import { CustomerFileSection } from "./CustomerFileSection";
 
 export default async function ClienteDetallePage({
   params,
@@ -30,16 +32,20 @@ export default async function ClienteDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [customer, activities, teamMembers, googleStatus] = await Promise.all([
+  const [customer, activities, teamMembers, googleStatus, files] = await Promise.all([
     getCustomer(id),
     getCustomerActivities(id),
     getTeamMembers(),
     isGoogleConfigured ? getGoogleStatus() : Promise.resolve({ connected: false, email: null }),
+    getCustomerFiles(id),
   ]);
 
   if (!customer) notFound();
 
   const googleConnected = isGoogleConfigured && googleStatus.connected;
+  const fotos = files.filter((f) => f.category === "foto");
+  const videos = files.filter((f) => f.category === "video");
+  const planos = files.filter((f) => f.category === "plano");
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -166,6 +172,34 @@ export default async function ClienteDetallePage({
             </div>
           </Card>
         </div>
+      </div>
+
+      {/* Archivos del cliente: fotografías, vídeos y planos */}
+      <div className="mt-6 space-y-5">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-500">
+          Archivos del cliente
+        </h2>
+        <CustomerFileSection
+          customerId={customer.id}
+          category="foto"
+          title="Fotografías"
+          accept="image/*"
+          files={fotos}
+        />
+        <CustomerFileSection
+          customerId={customer.id}
+          category="video"
+          title="Vídeos"
+          accept="video/*"
+          files={videos}
+        />
+        <CustomerFileSection
+          customerId={customer.id}
+          category="plano"
+          title="Planos"
+          accept="image/*,application/pdf,.pdf,.dwg,.dxf"
+          files={planos}
+        />
       </div>
     </div>
   );
