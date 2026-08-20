@@ -80,6 +80,19 @@ export async function getSupplier(id: string): Promise<Supplier | null> {
   return (data as Supplier) ?? null;
 }
 
+export type TeamMember = { id: string; full_name: string | null; email: string | null };
+
+/** Personas registradas en la plataforma (para invitar a citas). */
+export async function getTeamMembers(): Promise<TeamMember[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, full_name, email")
+    .eq("is_active", true)
+    .order("full_name", { ascending: true });
+  return (data as TeamMember[])?.filter((m) => m.email) ?? [];
+}
+
 /** Posibles duplicados por CIF/NIF, email o teléfono (sección 36). */
 export async function findCustomerDuplicates(params: {
   taxId?: string | null;

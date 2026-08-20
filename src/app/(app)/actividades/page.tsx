@@ -6,6 +6,7 @@ import {
   Mail,
   Users,
   MapPin,
+  CalendarClock,
   StickyNote,
   Activity as ActivityIcon,
   type LucideIcon,
@@ -23,6 +24,7 @@ const ICONS: Record<ActivityType, LucideIcon> = {
   email: Mail,
   reunion: Users,
   visita: MapPin,
+  cita: CalendarClock,
   nota: StickyNote,
 };
 
@@ -32,6 +34,7 @@ const LABELS: Record<ActivityType, string> = {
   email: "Email",
   reunion: "Reunión",
   visita: "Visita",
+  cita: "Cita",
   nota: "Nota",
 };
 

@@ -21,6 +21,7 @@ export type ActivityType =
   | "email"
   | "reunion"
   | "visita"
+  | "cita"
   | "nota";
 
 export const ACTIVITY_TYPES: { value: ActivityType; label: string }[] = [
@@ -29,6 +30,7 @@ export const ACTIVITY_TYPES: { value: ActivityType; label: string }[] = [
   { value: "email", label: "Email" },
   { value: "reunion", label: "Reunión" },
   { value: "visita", label: "Visita" },
+  { value: "cita", label: "Cita" },
   { value: "nota", label: "Nota" },
 ];
 

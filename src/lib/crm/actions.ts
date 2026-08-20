@@ -89,6 +89,40 @@ export async function deleteCustomer(id: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+/** Quita acentos y pasa a minúsculas, para buscar sin importar tildes/mayúsculas. */
+function normalizeText(s: string): string {
+  let out = "";
+  for (const ch of s.normalize("NFD")) {
+    const c = ch.codePointAt(0) ?? 0;
+    if (c >= 0x300 && c <= 0x36f) continue; // omitir marcas de acento
+    out += ch;
+  }
+  return out.toLowerCase().trim();
+}
+
+/** Busca contactos (clientes) para invitarlos a una cita. Tolerante a acentos. */
+export async function searchCustomerContacts(
+  term: string,
+): Promise<{ id: string; name: string; email: string | null }[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("customers")
+    .select("id, name, email")
+    .order("name")
+    .limit(1000);
+  const rows = (data ?? []) as { id: string; name: string; email: string | null }[];
+
+  const t = normalizeText(term);
+  const matches = t
+    ? rows.filter(
+        (r) =>
+          normalizeText(r.name).includes(t) ||
+          normalizeText(r.email ?? "").includes(t),
+      )
+    : rows;
+  return matches.slice(0, 25);
+}
+
 // ---------------------------------------------------------------
 // PROVEEDORES
 // ---------------------------------------------------------------

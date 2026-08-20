@@ -11,7 +11,10 @@ import {
   Wallet,
   CalendarClock,
 } from "lucide-react";
-import { getCustomer, getCustomerActivities } from "@/lib/crm/queries";
+import { getCustomer, getCustomerActivities, getTeamMembers } from "@/lib/crm/queries";
+import { isGoogleConfigured } from "@/lib/google/config";
+import { getGoogleStatus } from "@/lib/google/actions";
+import { isEmailConfigured } from "@/lib/email/config";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge, stageTone } from "@/components/ui/Badge";
 import { StatCard } from "@/components/ui/StatCard";
@@ -19,6 +22,7 @@ import { ActivityTimeline } from "@/components/crm/ActivityTimeline";
 import { formatCurrency, formatDate, initials } from "@/lib/format";
 import { AddActivity } from "./AddActivity";
 import { DeleteCustomerButton } from "./DeleteCustomerButton";
+import { ScheduleButton } from "./ScheduleButton";
 
 export default async function ClienteDetallePage({
   params,
@@ -26,12 +30,16 @@ export default async function ClienteDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [customer, activities] = await Promise.all([
+  const [customer, activities, teamMembers, googleStatus] = await Promise.all([
     getCustomer(id),
     getCustomerActivities(id),
+    getTeamMembers(),
+    isGoogleConfigured ? getGoogleStatus() : Promise.resolve({ connected: false, email: null }),
   ]);
 
   if (!customer) notFound();
+
+  const googleConnected = isGoogleConfigured && googleStatus.connected;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -61,6 +69,18 @@ export default async function ClienteDetallePage({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <ScheduleButton
+            customer={{
+              id: customer.id,
+              name: customer.name,
+              email: customer.email,
+              address: customer.address,
+              city: customer.city,
+            }}
+            teamMembers={teamMembers}
+            googleConnected={googleConnected}
+            emailConfigured={isEmailConfigured}
+          />
           <Link
             href={`/clientes/${customer.id}/editar` as Route}
             className="inline-flex items-center gap-1.5 rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50"
