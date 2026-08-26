@@ -1,5 +1,9 @@
 /** Utilidades de formato para toda la plataforma. */
 
+// Zona horaria de la empresa (España). Así las fechas se ven siempre en hora
+// española, se dibujen en el navegador o en un servidor (aunque esté en UTC).
+const TZ = "Europe/Madrid";
+
 export function formatCurrency(value: number | null | undefined): string {
   if (value === null || value === undefined) return "—";
   return new Intl.NumberFormat("es-ES", {
@@ -17,6 +21,7 @@ export function formatDate(value: string | null | undefined): string {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    timeZone: TZ,
   }).format(d);
 }
 
@@ -30,6 +35,7 @@ export function formatDateTime(value: string | null | undefined): string {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: TZ,
   }).format(d);
 }
 

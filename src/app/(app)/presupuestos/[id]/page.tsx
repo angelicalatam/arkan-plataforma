@@ -8,6 +8,7 @@ import { statusInfo } from "@/lib/quotes/types";
 import { formatDate } from "@/lib/format";
 import { QuoteEditor } from "./QuoteEditor";
 import { DeleteQuoteButton } from "./DeleteQuoteButton";
+import { ConvertToProjectButton } from "./ConvertToProjectButton";
 
 export default async function PresupuestoDetallePage({
   params,
@@ -71,6 +72,7 @@ export default async function PresupuestoDetallePage({
             <Pencil className="h-4 w-4" />
             Editar datos
           </Link>
+          <ConvertToProjectButton quoteId={quote.id} />
           <DeleteQuoteButton id={quote.id} code={quote.code ?? "presupuesto"} />
         </div>
       </div>

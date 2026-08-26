@@ -3,11 +3,14 @@ import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Pencil, Phone, Mail, Globe, MapPin } from "lucide-react";
 import { getSupplier } from "@/lib/crm/queries";
+import { getSupplierConversations } from "@/lib/conversations/queries";
+import { getProjectOptions } from "@/lib/projects/queries";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { StarRating } from "@/components/crm/StarRating";
 import { initials } from "@/lib/format";
 import { DeleteSupplierButton } from "./DeleteSupplierButton";
+import { SupplierConversations } from "./SupplierConversations";
 
 export default async function ProveedorDetallePage({
   params,
@@ -15,7 +18,11 @@ export default async function ProveedorDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supplier = await getSupplier(id);
+  const [supplier, conversations, projectOptions] = await Promise.all([
+    getSupplier(id),
+    getSupplierConversations(id),
+    getProjectOptions(),
+  ]);
   if (!supplier) notFound();
 
   const ratings = [
@@ -132,6 +139,14 @@ export default async function ProveedorDetallePage({
             </Card>
           )}
         </div>
+      </div>
+
+      <div className="mt-5">
+        <SupplierConversations
+          supplierId={supplier.id}
+          conversations={conversations}
+          projectOptions={projectOptions}
+        />
       </div>
     </div>
   );
