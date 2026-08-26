@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Pencil, Phone, Mail, Globe, MapPin } from "lucide-react";
 import { getSupplier } from "@/lib/crm/queries";
 import { getSupplierConversations } from "@/lib/conversations/queries";
+import { getSupplierOperations } from "@/lib/operations/queries";
 import { getProjectOptions } from "@/lib/projects/queries";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -11,6 +12,7 @@ import { StarRating } from "@/components/crm/StarRating";
 import { initials } from "@/lib/format";
 import { DeleteSupplierButton } from "./DeleteSupplierButton";
 import { SupplierConversations } from "./SupplierConversations";
+import { SupplierOperations } from "./SupplierOperations";
 
 export default async function ProveedorDetallePage({
   params,
@@ -18,9 +20,10 @@ export default async function ProveedorDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [supplier, conversations, projectOptions] = await Promise.all([
+  const [supplier, conversations, operations, projectOptions] = await Promise.all([
     getSupplier(id),
     getSupplierConversations(id),
+    getSupplierOperations(id),
     getProjectOptions(),
   ]);
   if (!supplier) notFound();
@@ -139,6 +142,14 @@ export default async function ProveedorDetallePage({
             </Card>
           )}
         </div>
+      </div>
+
+      <div className="mt-5">
+        <SupplierOperations
+          supplierId={supplier.id}
+          operations={operations}
+          projectOptions={projectOptions}
+        />
       </div>
 
       <div className="mt-5">

@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { getProject } from "@/lib/projects/queries";
 import { getProjectConversations } from "@/lib/conversations/queries";
+import { getProjectOperations } from "@/lib/operations/queries";
+import { OperationsTable } from "@/components/operations/OperationsTable";
 import {
   projectStatusInfo,
   projectEconomics,
@@ -37,9 +39,10 @@ export default async function ObraDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [project, conversations] = await Promise.all([
+  const [project, conversations, operations] = await Promise.all([
     getProject(id),
     getProjectConversations(id),
+    getProjectOperations(id),
   ]);
   if (!project) notFound();
 
@@ -183,6 +186,14 @@ export default async function ObraDetallePage({
             )}
           </Card>
         </div>
+      </div>
+
+      {/* Documentación de proveedores (operaciones documentales) */}
+      <div className="mt-5">
+        <Card>
+          <CardHeader title="Documentación de proveedores" />
+          <OperationsTable operations={operations} show="proveedor" />
+        </Card>
       </div>
 
       {/* Conversaciones / Seguimiento con proveedores */}
