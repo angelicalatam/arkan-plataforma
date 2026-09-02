@@ -110,6 +110,18 @@ export type Supplier = {
   updated_at: string;
 };
 
+export type SupplierContact = {
+  id: string;
+  supplier_id: string;
+  name: string;
+  role: string | null;
+  phone: string | null;
+  email: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Activity = {
   id: string;
   type: ActivityType;

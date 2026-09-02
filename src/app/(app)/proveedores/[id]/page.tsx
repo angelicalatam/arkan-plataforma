@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Pencil, Phone, Mail, Globe, MapPin } from "lucide-react";
-import { getSupplier } from "@/lib/crm/queries";
+import { getSupplier, getSupplierContacts } from "@/lib/crm/queries";
 import { getSupplierConversations } from "@/lib/conversations/queries";
 import { getSupplierOperations } from "@/lib/operations/queries";
 import { getProjectOptions } from "@/lib/projects/queries";
@@ -13,6 +13,7 @@ import { initials } from "@/lib/format";
 import { DeleteSupplierButton } from "./DeleteSupplierButton";
 import { SupplierConversations } from "./SupplierConversations";
 import { SupplierOperations } from "./SupplierOperations";
+import { SupplierContacts } from "./SupplierContacts";
 
 export default async function ProveedorDetallePage({
   params,
@@ -20,8 +21,9 @@ export default async function ProveedorDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [supplier, conversations, operations, projectOptions] = await Promise.all([
+  const [supplier, contacts, conversations, operations, projectOptions] = await Promise.all([
     getSupplier(id),
+    getSupplierContacts(id),
     getSupplierConversations(id),
     getSupplierOperations(id),
     getProjectOptions(),
@@ -142,6 +144,10 @@ export default async function ProveedorDetallePage({
             </Card>
           )}
         </div>
+      </div>
+
+      <div className="mt-5">
+        <SupplierContacts supplierId={supplier.id} contacts={contacts} />
       </div>
 
       <div className="mt-5">

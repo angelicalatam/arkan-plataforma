@@ -189,6 +189,55 @@ export async function deleteSupplier(id: string): Promise<ActionResult> {
 }
 
 // ---------------------------------------------------------------
+// PERSONAS DE CONTACTO DEL PROVEEDOR (varias por proveedor)
+// ---------------------------------------------------------------
+export type SupplierContactInput = {
+  name: string;
+  role?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  notes?: string | null;
+};
+
+export async function addSupplierContact(
+  supplierId: string,
+  input: SupplierContactInput,
+): Promise<ActionResult> {
+  if (!input.name?.trim()) return { ok: false, error: "El nombre es obligatorio." };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("supplier_contacts")
+    .insert(clean({ supplier_id: supplierId, ...input }));
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/proveedores/${supplierId}`);
+  return { ok: true };
+}
+
+export async function updateSupplierContact(
+  id: string,
+  supplierId: string,
+  input: SupplierContactInput,
+): Promise<ActionResult> {
+  if (!input.name?.trim()) return { ok: false, error: "El nombre es obligatorio." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("supplier_contacts").update(clean({ ...input })).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/proveedores/${supplierId}`);
+  return { ok: true };
+}
+
+export async function deleteSupplierContact(
+  id: string,
+  supplierId: string,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("supplier_contacts").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/proveedores/${supplierId}`);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------
 // ACTIVIDADES
 // ---------------------------------------------------------------
 export async function addActivity(input: {
