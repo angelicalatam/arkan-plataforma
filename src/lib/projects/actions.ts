@@ -184,6 +184,35 @@ export async function deleteProject(id: string): Promise<Result> {
   return { ok: true };
 }
 
+export async function updateItemSchedule(
+  itemId: string,
+  projectId: string,
+  input: { planned_start?: string | null; planned_end?: string | null },
+): Promise<Result> {
+  const supabase = await createClient();
+  const patch: Record<string, unknown> = {};
+  if (input.planned_start !== undefined)
+    patch.planned_start = input.planned_start === "" ? null : input.planned_start;
+  if (input.planned_end !== undefined)
+    patch.planned_end = input.planned_end === "" ? null : input.planned_end;
+  const { error } = await supabase.from("project_items").update(patch).eq("id", itemId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/obras/${projectId}`);
+  return { ok: true };
+}
+
+/** Borra las fechas manuales de todas las partidas → vuelven al reparto automático. */
+export async function resetProjectSchedule(projectId: string): Promise<Result> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("project_items")
+    .update({ planned_start: null, planned_end: null })
+    .eq("project_id", projectId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/obras/${projectId}`);
+  return { ok: true };
+}
+
 export async function updateItemProgress(
   itemId: string,
   projectId: string,

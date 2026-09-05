@@ -23,7 +23,10 @@ import { getProjectPurchases } from "@/lib/purchases/queries";
 import { purchaseTotals, purchasesCost, purchaseStatusInfo } from "@/lib/purchases/types";
 import { getProjectTimeEntries } from "@/lib/team/queries";
 import { getEmployeeOptions } from "@/lib/team/queries";
+import { laborCost } from "@/lib/team/types";
+import { computeProfit } from "@/lib/profitability/types";
 import { ProjectLabor } from "./ProjectLabor";
+import { ProjectSchedule } from "./ProjectSchedule";
 import {
   projectStatusInfo,
   projectEconomics,
@@ -66,6 +69,14 @@ export default async function ObraDetallePage({
   const eco = projectEconomics(allItems);
   const progress = projectProgress(allItems);
   const si = projectStatusInfo(project.status);
+
+  const laborReal = laborCost(timeEntries);
+  const profit = computeProfit({
+    contract: Number(project.contract_value) || eco.sale,
+    estimatedCost: eco.cost,
+    materialsCost: materialCost,
+    laborCost: laborReal,
+  });
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -131,6 +142,48 @@ export default async function ObraDetallePage({
           tone="green"
         />
         <StatCard label="Avance" value={`${Math.round(progress)}%`} icon={Percent} tone="blue" />
+      </div>
+
+      {/* Rentabilidad real */}
+      <div className="mb-4">
+        <Card>
+          <CardHeader title="Rentabilidad real" />
+          <div className="grid grid-cols-2 gap-px bg-ink-100 sm:grid-cols-4">
+            <div className="bg-white p-4">
+              <p className="text-xs text-ink-500">Contratado</p>
+              <p className="mt-1 text-lg font-bold text-ink-900">{formatCurrency(profit.contract)}</p>
+            </div>
+            <div className="bg-white p-4">
+              <p className="text-xs text-ink-500">Coste real</p>
+              <p className="mt-1 text-lg font-bold text-ink-900">{formatCurrency(profit.realCost)}</p>
+              <p className="text-[11px] text-ink-400">
+                Mat. {formatCurrency(profit.materialsCost)} · MO {formatCurrency(profit.laborCost)}
+              </p>
+            </div>
+            <div className="bg-white p-4">
+              <p className="text-xs text-ink-500">Beneficio real</p>
+              <p className={`mt-1 text-lg font-bold ${profit.profitEur >= 0 ? "text-green-700" : "text-red-600"}`}>
+                {formatCurrency(profit.profitEur)}
+              </p>
+            </div>
+            <div className="bg-white p-4">
+              <p className="text-xs text-ink-500">Margen real (s/ venta)</p>
+              <p className={`mt-1 text-lg font-bold ${profit.marginPct >= 0 ? "text-ink-900" : "text-red-600"}`}>
+                {profit.marginPct.toFixed(1)}%
+              </p>
+            </div>
+          </div>
+          <div className="border-t border-ink-100 px-4 py-2.5 text-sm text-ink-600">
+            Coste estimado (presupuestado): <strong className="text-ink-800">{formatCurrency(profit.estimatedCost)}</strong>
+            {" · "}
+            Desviación:{" "}
+            <strong className={profit.costDeviation > 0 ? "text-red-600" : "text-green-700"}>
+              {profit.costDeviation > 0 ? "+" : ""}
+              {formatCurrency(profit.costDeviation)}
+              {profit.estimatedCost > 0 && ` (${profit.costDeviation > 0 ? "+" : ""}${profit.costDeviationPct.toFixed(1)}%)`}
+            </strong>
+          </div>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
@@ -201,6 +254,16 @@ export default async function ObraDetallePage({
             )}
           </Card>
         </div>
+      </div>
+
+      {/* Cronograma */}
+      <div className="mt-5">
+        <ProjectSchedule
+          projectId={project.id}
+          startPlanned={project.start_planned}
+          endPlanned={project.end_planned}
+          chapters={chapters}
+        />
       </div>
 
       {/* Mano de obra / Horas */}

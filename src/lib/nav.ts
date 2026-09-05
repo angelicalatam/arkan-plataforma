@@ -16,6 +16,7 @@ import {
   Receipt,
   ChartColumn,
   CalendarDays,
+  TrendingUp,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -55,6 +56,7 @@ export const navGroups: NavGroup[] = [
       { label: "Productos", href: "/productos", icon: ShoppingBag },
       { label: "Obras", href: "/obras", icon: HardHat },
       { label: "Compras", href: "/compras", icon: ShoppingCart },
+      { label: "Rentabilidad", href: "/rentabilidad", icon: TrendingUp },
       { label: "Materiales", href: "/materiales", icon: Package },
       { label: "Tareas", href: "/tareas", icon: SquareCheckBig },
       { label: "Incidencias", href: "/incidencias", icon: TriangleAlert },

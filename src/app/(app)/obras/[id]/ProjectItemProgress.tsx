@@ -4,7 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { updateItemProgress } from "@/lib/projects/actions";
-import { ITEM_STATUSES, itemStatusInfo, type ItemStatus, type ProjectItem } from "@/lib/projects/types";
+import {
+  ITEM_STATUSES,
+  itemStatusInfo,
+  statusFromPct,
+  pctFromStatus,
+  type ItemStatus,
+  type ProjectItem,
+} from "@/lib/projects/types";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { inputClass } from "@/components/ui/Form";
@@ -26,6 +33,21 @@ export function ProjectItemProgress({
     await updateItemProgress(item.id, projectId, next);
     setSaving(false);
     router.refresh();
+  }
+
+  // Al cambiar el %, ajusta el estado en consecuencia (y guarda ambos).
+  function onPctCommit(value: number) {
+    const nextStatus = statusFromPct(value, status);
+    setStatus(nextStatus);
+    save({ pct_done: value, item_status: nextStatus });
+  }
+
+  // Al cambiar el estado, ajusta el % en consecuencia (y guarda ambos).
+  function onStatusChange(value: ItemStatus) {
+    const nextPct = pctFromStatus(value, pct);
+    setStatus(value);
+    setPct(nextPct);
+    save({ item_status: value, pct_done: nextPct });
   }
 
   const si = itemStatusInfo(status);
@@ -62,18 +84,14 @@ export function ProjectItemProgress({
             value={pct}
             onChange={(e) => setPct(Number(e.target.value))}
             onBlur={() => {
-              if ((Number(item.pct_done) || 0) !== pct) save({ pct_done: pct });
+              if ((Number(item.pct_done) || 0) !== pct) onPctCommit(pct);
             }}
             className={`${inputClass} w-20 text-right`}
             title="% ejecutado"
           />
           <select
             value={status}
-            onChange={(e) => {
-              const v = e.target.value as ItemStatus;
-              setStatus(v);
-              save({ item_status: v });
-            }}
+            onChange={(e) => onStatusChange(e.target.value as ItemStatus)}
             className={`${inputClass} max-w-[11rem]`}
           >
             {ITEM_STATUSES.map((s) => (

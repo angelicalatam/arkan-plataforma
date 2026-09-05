@@ -48,6 +48,29 @@ export function itemStatusInfo(status: string) {
   return ITEM_STATUSES.find((s) => s.value === status) ?? ITEM_STATUSES[0];
 }
 
+/**
+ * Estado deducido del % de avance (para enlazarlos):
+ * 0% → Pendiente, 100% → Terminado, entre medias → En proceso.
+ * "Bloqueado" y "Parcial" son estados manuales: el % no los cambia.
+ */
+export function statusFromPct(pct: number, current: ItemStatus): ItemStatus {
+  if (current === "bloqueado" || current === "parcial") return current;
+  const p = Number(pct) || 0;
+  if (p >= 100) return "terminado";
+  if (p <= 0) return "pendiente";
+  return "en_proceso";
+}
+
+/**
+ * % deducido del estado (para enlazarlos):
+ * Terminado → 100%, Pendiente → 0%. El resto de estados no cambian el %.
+ */
+export function pctFromStatus(status: ItemStatus, currentPct: number): number {
+  if (status === "terminado") return 100;
+  if (status === "pendiente") return 0;
+  return Number(currentPct) || 0;
+}
+
 export type ProjectItem = {
   id: string;
   project_id: string;
@@ -64,6 +87,8 @@ export type ProjectItem = {
   est_workers: number | null;
   pct_done: number;
   item_status: ItemStatus;
+  planned_start: string | null;
+  planned_end: string | null;
   notes: string | null;
   position: number;
 };
