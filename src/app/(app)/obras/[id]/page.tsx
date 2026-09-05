@@ -21,6 +21,9 @@ import { getProjectOperations } from "@/lib/operations/queries";
 import { OperationsTable } from "@/components/operations/OperationsTable";
 import { getProjectPurchases } from "@/lib/purchases/queries";
 import { purchaseTotals, purchasesCost, purchaseStatusInfo } from "@/lib/purchases/types";
+import { getProjectTimeEntries } from "@/lib/team/queries";
+import { getEmployeeOptions } from "@/lib/team/queries";
+import { ProjectLabor } from "./ProjectLabor";
 import {
   projectStatusInfo,
   projectEconomics,
@@ -42,15 +45,21 @@ export default async function ObraDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [project, conversations, operations, purchases] = await Promise.all([
-    getProject(id),
-    getProjectConversations(id),
-    getProjectOperations(id),
-    getProjectPurchases(id),
-  ]);
+  const [project, conversations, operations, purchases, timeEntries, employeeOptions] =
+    await Promise.all([
+      getProject(id),
+      getProjectConversations(id),
+      getProjectOperations(id),
+      getProjectPurchases(id),
+      getProjectTimeEntries(id),
+      getEmployeeOptions(),
+    ]);
   if (!project) notFound();
 
   const materialCost = purchasesCost(purchases);
+  const itemOptions = (project.chapters ?? [])
+    .flatMap((c) => c.items ?? [])
+    .map((it) => ({ id: it.id, code: it.code, description: it.description }));
 
   const chapters = project.chapters ?? [];
   const allItems = chapters.flatMap((c) => c.items ?? []);
@@ -192,6 +201,16 @@ export default async function ObraDetallePage({
             )}
           </Card>
         </div>
+      </div>
+
+      {/* Mano de obra / Horas */}
+      <div className="mt-5">
+        <ProjectLabor
+          projectId={project.id}
+          entries={timeEntries}
+          employees={employeeOptions}
+          items={itemOptions}
+        />
       </div>
 
       {/* Compras / Materiales */}
