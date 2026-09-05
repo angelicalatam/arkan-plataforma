@@ -22,7 +22,9 @@ export type QuoteItemProduct = {
   name: string;
   brand: string | null;
   description: string | null;
-  price: number;
+  cost: number; // coste del producto
+  margin_pct: number; // % de beneficio sobre el coste
+  price: number; // precio de venta al cliente
   reference: string | null;
   image_url: string | null;
   is_recommended: boolean;

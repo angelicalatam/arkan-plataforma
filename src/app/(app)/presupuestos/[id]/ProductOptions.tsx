@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
+  Pencil,
   Trash2,
   Star,
   Loader2,
@@ -16,6 +17,7 @@ import {
 import type { QuoteItemProduct, Product } from "@/lib/products/types";
 import {
   addItemProduct,
+  updateItemProduct,
   deleteItemProduct,
   setRecommendedProduct,
   searchProducts,
@@ -36,6 +38,7 @@ export function ProductOptions({
 }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   async function onDelete(p: QuoteItemProduct) {
     if (!window.confirm(`¿Quitar la opción "${p.name}"?`)) return;
@@ -79,6 +82,11 @@ export function ProductOptions({
                 <p className="truncate text-sm font-medium text-ink-800">{p.name}</p>
                 {p.brand && <p className="text-xs text-ink-400">{p.brand}</p>}
                 <p className="text-sm font-semibold text-brand-700">{formatCurrency(p.price)}</p>
+                {p.cost > 0 && (
+                  <p className="text-[10px] text-ink-400">
+                    Coste {formatCurrency(p.cost)} · +{Number(p.margin_pct)}%
+                  </p>
+                )}
                 {p.reference && <p className="truncate text-[10px] text-ink-400">{p.reference}</p>}
                 <div className="mt-1 flex items-center gap-2">
                   <button
@@ -90,6 +98,17 @@ export function ProductOptions({
                   >
                     <Star className={`h-3.5 w-3.5 ${p.is_recommended ? "fill-brand-400" : ""}`} />
                     {p.is_recommended ? "Recomendada" : "Recomendar"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAdding(false);
+                      setEditingId((cur) => (cur === p.id ? null : p.id));
+                    }}
+                    className={`inline-flex items-center gap-1 text-xs ${
+                      editingId === p.id ? "text-brand-600" : "text-ink-400 hover:text-brand-600"
+                    }`}
+                  >
+                    <Pencil className="h-3.5 w-3.5" /> Editar
                   </button>
                   <button
                     onClick={() => onDelete(p)}
@@ -104,8 +123,16 @@ export function ProductOptions({
         </div>
       )}
 
-      {adding ? (
-        <AddOptionForm
+      {editingId ? (
+        <OptionForm
+          quoteId={quoteId}
+          quoteItemId={quoteItemId}
+          product={products.find((p) => p.id === editingId)}
+          onDone={() => setEditingId(null)}
+          onCancel={() => setEditingId(null)}
+        />
+      ) : adding ? (
+        <OptionForm
           quoteId={quoteId}
           quoteItemId={quoteItemId}
           onDone={() => setAdding(false)}
@@ -123,26 +150,31 @@ export function ProductOptions({
   );
 }
 
-function AddOptionForm({
+function OptionForm({
   quoteId,
   quoteItemId,
+  product,
   onDone,
   onCancel,
 }: {
   quoteId: string;
   quoteItemId: string;
+  product?: QuoteItemProduct;
   onDone: () => void;
   onCancel: () => void;
 }) {
   const router = useRouter();
+  const editing = Boolean(product);
   const [form, setForm] = useState<ItemProductInput>({
-    name: "",
-    brand: "",
-    price: 0,
-    reference: "",
-    description: "",
-    image_url: null,
-    product_id: null,
+    name: product?.name ?? "",
+    brand: product?.brand ?? "",
+    cost: product?.cost ?? 0,
+    margin_pct: product?.margin_pct ?? 0,
+    price: product?.price ?? 0,
+    reference: product?.reference ?? "",
+    description: product?.description ?? "",
+    image_url: product?.image_url ?? null,
+    product_id: product?.product_id ?? null,
   });
   const [saveBank, setSaveBank] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -156,6 +188,16 @@ function AddOptionForm({
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  // Al cambiar coste o beneficio, recalcula el precio de venta.
+  function setCostOrMargin(next: { cost?: number; margin_pct?: number }) {
+    setForm((f) => {
+      const cost = next.cost ?? Number(f.cost) ?? 0;
+      const margin = next.margin_pct ?? Number(f.margin_pct) ?? 0;
+      const price = cost > 0 ? Math.round(cost * (1 + margin / 100) * 100) / 100 : f.price ?? 0;
+      return { ...f, cost, margin_pct: margin, price };
+    });
+  }
+
   async function runSearch(term: string) {
     setBankLoading(true);
     setBankResults(await searchProducts(term));
@@ -166,6 +208,8 @@ function AddOptionForm({
     setForm({
       name: p.name,
       brand: p.brand ?? "",
+      cost: 0,
+      margin_pct: 0,
       price: p.price,
       reference: p.reference ?? "",
       description: p.description ?? "",
@@ -183,12 +227,10 @@ function AddOptionForm({
     }
     setLoading(true);
     setError(null);
-    const res = await addItemProduct(
-      quoteId,
-      quoteItemId,
-      { ...form, price: Number(form.price) || 0 },
-      saveBank,
-    );
+    const payload = { ...form, price: Number(form.price) || 0 };
+    const res = editing
+      ? await updateItemProduct(product!.id, quoteId, payload)
+      : await addItemProduct(quoteId, quoteItemId, payload, saveBank);
     setLoading(false);
     if (!res.ok) {
       setError(res.error);
@@ -267,12 +309,32 @@ function AddOptionForm({
           <span className="mb-1 block text-[11px] font-medium text-ink-500">Nombre *</span>
           <input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} />
         </label>
-        <label>
+        <label className="col-span-2">
           <span className="mb-1 block text-[11px] font-medium text-ink-500">Marca</span>
           <input className={inputClass} value={form.brand ?? ""} onChange={(e) => set("brand", e.target.value)} />
         </label>
         <label>
-          <span className="mb-1 block text-[11px] font-medium text-ink-500">Precio (€)</span>
+          <span className="mb-1 block text-[11px] font-medium text-ink-500">Coste (€)</span>
+          <input
+            type="number"
+            step="0.01"
+            className={`${inputClass} text-right`}
+            value={form.cost ?? 0}
+            onChange={(e) => setCostOrMargin({ cost: e.target.value === "" ? 0 : Number(e.target.value) })}
+          />
+        </label>
+        <label>
+          <span className="mb-1 block text-[11px] font-medium text-ink-500">Beneficio (%)</span>
+          <input
+            type="number"
+            step="0.01"
+            className={`${inputClass} text-right`}
+            value={form.margin_pct ?? 0}
+            onChange={(e) => setCostOrMargin({ margin_pct: e.target.value === "" ? 0 : Number(e.target.value) })}
+          />
+        </label>
+        <label>
+          <span className="mb-1 block text-[11px] font-medium text-ink-500">Precio venta (€)</span>
           <input
             type="number"
             step="0.01"
@@ -281,6 +343,7 @@ function AddOptionForm({
             onChange={(e) => set("price", e.target.value === "" ? 0 : Number(e.target.value))}
           />
         </label>
+        <div className="hidden sm:block" />
         <label className="col-span-2">
           <span className="mb-1 block text-[11px] font-medium text-ink-500">Referencia proveedor</span>
           <input className={inputClass} value={form.reference ?? ""} onChange={(e) => set("reference", e.target.value)} />
@@ -290,17 +353,24 @@ function AddOptionForm({
           <input className={inputClass} value={form.description ?? ""} onChange={(e) => set("description", e.target.value)} />
         </label>
       </div>
+      <p className="mt-1 text-[11px] text-ink-400">
+        El precio de venta se calcula solo (coste + beneficio), pero puedes ajustarlo a mano.
+      </p>
 
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <label className="flex items-center gap-2 text-sm text-ink-600">
-          <input
-            type="checkbox"
-            checked={saveBank}
-            onChange={(e) => setSaveBank(e.target.checked)}
-            className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
-          />
-          Guardar también en el banco de productos
-        </label>
+        {editing ? (
+          <span />
+        ) : (
+          <label className="flex items-center gap-2 text-sm text-ink-600">
+            <input
+              type="checkbox"
+              checked={saveBank}
+              onChange={(e) => setSaveBank(e.target.checked)}
+              className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
+            />
+            Guardar también en el banco de productos
+          </label>
+        )}
         <div className="flex justify-end gap-2">
           <button
             type="button"
@@ -315,7 +385,7 @@ function AddOptionForm({
             className="inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            Añadir opción
+            {editing ? "Guardar cambios" : "Añadir opción"}
           </button>
         </div>
       </div>

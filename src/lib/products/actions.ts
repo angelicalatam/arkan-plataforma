@@ -72,6 +72,8 @@ export type ItemProductInput = {
   name: string;
   brand?: string | null;
   description?: string | null;
+  cost?: number | null;
+  margin_pct?: number | null;
   price?: number | null;
   reference?: string | null;
   image_url?: string | null;
@@ -101,6 +103,8 @@ export async function addItemProduct(
         name: input.name,
         brand: input.brand ?? null,
         description: input.description ?? null,
+        cost: input.cost ?? 0,
+        margin_pct: input.margin_pct ?? 0,
         price: input.price ?? 0,
         reference: input.reference ?? null,
         image_url: input.image_url ?? null,
@@ -136,6 +140,34 @@ export async function addItemProduct(
 
   revalidatePath(`/presupuestos/${quoteId}`);
   return { ok: true, id: data.id };
+}
+
+export async function updateItemProduct(
+  id: string,
+  quoteId: string,
+  input: ItemProductInput,
+): Promise<Result> {
+  if (!input.name?.trim()) return { ok: false, error: "El nombre del producto es obligatorio." };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("quote_item_products")
+    .update(
+      clean({
+        product_id: input.product_id ?? null,
+        name: input.name,
+        brand: input.brand ?? null,
+        description: input.description ?? null,
+        cost: input.cost ?? 0,
+        margin_pct: input.margin_pct ?? 0,
+        price: input.price ?? 0,
+        reference: input.reference ?? null,
+        image_url: input.image_url ?? null,
+      }),
+    )
+    .eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/presupuestos/${quoteId}`);
+  return { ok: true, id };
 }
 
 export async function deleteItemProduct(id: string, quoteId: string): Promise<Result> {

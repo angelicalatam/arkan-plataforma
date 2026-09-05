@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { QuoteStatus } from "./types";
 import type { PriceItem } from "./bank-types";
+import { parseQuoteWorkbook } from "./import";
 
 /** Busca partidas en el banco de precios (para el selector del editor). */
 export async function searchPriceItems(term: string): Promise<PriceItem[]> {
@@ -105,6 +106,169 @@ export async function createQuote(input: QuoteInput): Promise<Result> {
   if (error) return { ok: false, error: error.message };
   revalidatePath("/presupuestos");
   return { ok: true, id: data.id };
+}
+
+/**
+ * Importa un presupuesto completo desde un Excel exportado por la app
+ * (capítulos + partidas). Crea el presupuesto, sus capítulos y sus partidas.
+ */
+export async function importQuoteFromExcel(
+  formData: FormData,
+): Promise<
+  Result & { chapters?: number; items?: number; products?: number; totalSale?: number }
+> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "No se recibió ningún archivo." };
+  }
+  const rawTitle = (formData.get("title") as string | null)?.trim();
+  const title = rawTitle || file.name.replace(/\.(xls|xlsx|xlsm)$/i, "");
+  const customer_id = ((formData.get("customer_id") as string | null) || "").trim() || null;
+
+  let parsed;
+  try {
+    const buf = Buffer.from(await file.arrayBuffer());
+    parsed = parseQuoteWorkbook(buf);
+  } catch (e) {
+    return {
+      ok: false,
+      error: "No se pudo leer el Excel: " + (e instanceof Error ? e.message : String(e)),
+    };
+  }
+  if (parsed.chapters.length === 0) {
+    return { ok: false, error: "No se encontraron capítulos ni partidas en el Excel." };
+  }
+
+  const supabase = await createClient();
+
+  // Número de presupuesto.
+  const { count } = await supabase
+    .from("quotes")
+    .select("id", { count: "exact", head: true });
+  const code = `PRES-${String((count ?? 0) + 1).padStart(4, "0")}`;
+
+  const { data: quote, error: qErr } = await supabase
+    .from("quotes")
+    .insert(
+      clean({
+        code,
+        title,
+        customer_id,
+        status: "borrador",
+        tax_rate: 21,
+        issue_date: new Date().toISOString().slice(0, 10),
+        notes: `Importado desde Excel (${file.name}).`,
+      }),
+    )
+    .select("id")
+    .single();
+  if (qErr) return { ok: false, error: qErr.message };
+  const quoteId = quote.id as string;
+
+  // Capítulos (inserción en bloque).
+  const chapterRows = parsed.chapters.map((c, i) => ({
+    quote_id: quoteId,
+    name: c.name || `Capítulo ${i + 1}`,
+    code: c.code,
+    position: i,
+  }));
+  const { data: chIns, error: chErr } = await supabase
+    .from("quote_chapters")
+    .insert(chapterRows)
+    .select("id, position");
+  if (chErr) {
+    await supabase.from("quotes").delete().eq("id", quoteId);
+    return { ok: false, error: chErr.message };
+  }
+  const chapterIdByPos = new Map<number, string>();
+  for (const row of chIns ?? []) {
+    chapterIdByPos.set(row.position as number, row.id as string);
+  }
+
+  // Partidas (inserción en bloque).
+  const itemRows: Record<string, unknown>[] = [];
+  parsed.chapters.forEach((c, ci) => {
+    const chapterId = chapterIdByPos.get(ci);
+    if (!chapterId) return;
+    c.items.forEach((it, ii) => {
+      itemRows.push({
+        quote_id: quoteId,
+        chapter_id: chapterId,
+        code: it.code,
+        description: it.description,
+        unit: it.unit,
+        quantity: it.quantity,
+        cost_labor: it.cost_labor,
+        cost_materials: it.cost_materials,
+        cost_other: it.cost_other,
+        margin_pct: it.margin_pct,
+        notes: it.notes,
+        position: ii,
+      });
+    });
+  });
+
+  let productCount = 0;
+  if (itemRows.length > 0) {
+    const { data: itIns, error: itErr } = await supabase
+      .from("quote_items")
+      .insert(itemRows)
+      .select("id, chapter_id, position");
+    if (itErr) {
+      await supabase.from("quotes").delete().eq("id", quoteId);
+      return { ok: false, error: itErr.message };
+    }
+    // Índice de partidas creadas por (capítulo, posición) para asignar productos.
+    const itemIdByKey = new Map<string, string>();
+    for (const row of itIns ?? []) {
+      itemIdByKey.set(`${row.chapter_id}|${row.position}`, row.id as string);
+    }
+
+    // Opciones de producto por partida (filas "Producto" del Excel).
+    const productRows: Record<string, unknown>[] = [];
+    parsed.chapters.forEach((c, ci) => {
+      const chapterId = chapterIdByPos.get(ci);
+      if (!chapterId) return;
+      c.items.forEach((it, ii) => {
+        if (!it.products || it.products.length === 0) return;
+        const itemId = itemIdByKey.get(`${chapterId}|${ii}`);
+        if (!itemId) return;
+        it.products.forEach((p, pi) => {
+          productRows.push({
+            quote_item_id: itemId,
+            product_id: null,
+            name: p.name,
+            brand: null,
+            description: p.description,
+            cost: p.cost,
+            margin_pct: p.margin_pct,
+            price: p.price,
+            reference: null,
+            image_url: null,
+            is_recommended: pi === 0, // el producto incluido queda recomendado
+            position: pi,
+          });
+        });
+      });
+    });
+    if (productRows.length > 0) {
+      const { error: prErr } = await supabase
+        .from("quote_item_products")
+        .insert(productRows);
+      // Si fallara, no abortamos el presupuesto: las partidas ya son correctas.
+      if (!prErr) productCount = productRows.length;
+    }
+  }
+
+  revalidatePath("/presupuestos");
+  return {
+    ok: true,
+    id: quoteId,
+    chapters: parsed.chapters.length,
+    items: itemRows.length,
+    products: productCount,
+    totalSale: parsed.totalSale,
+  };
 }
 
 export async function updateQuote(id: string, input: QuoteInput): Promise<Result> {
