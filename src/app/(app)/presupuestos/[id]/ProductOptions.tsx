@@ -189,11 +189,14 @@ function OptionForm({
   }
 
   // Al cambiar coste o beneficio, recalcula el precio de venta.
+  // El beneficio es "sobre el precio" (igual que el Excel): precio = coste / (1 - beneficio/100).
   function setCostOrMargin(next: { cost?: number; margin_pct?: number }) {
     setForm((f) => {
       const cost = next.cost ?? Number(f.cost) ?? 0;
       const margin = next.margin_pct ?? Number(f.margin_pct) ?? 0;
-      const price = cost > 0 ? Math.round(cost * (1 + margin / 100) * 100) / 100 : f.price ?? 0;
+      const denom = 1 - margin / 100;
+      const price =
+        cost > 0 && denom > 0 ? Math.round((cost / denom) * 100) / 100 : f.price ?? 0;
       return { ...f, cost, margin_pct: margin, price };
     });
   }

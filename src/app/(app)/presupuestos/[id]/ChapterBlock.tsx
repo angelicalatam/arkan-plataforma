@@ -119,14 +119,21 @@ export function ChapterBlock({
               editingId === item.id ? (
                 <tr key={item.id}>
                   <td colSpan={9} className="p-2">
-                    <ItemForm
-                      quoteId={quoteId}
-                      chapterId={chapter.id}
-                      chapterName={chapter.name}
-                      item={item}
-                      onDone={() => setEditingId(null)}
-                      onCancel={() => setEditingId(null)}
-                    />
+                    <div className="space-y-3">
+                      <ItemForm
+                        quoteId={quoteId}
+                        chapterId={chapter.id}
+                        chapterName={chapter.name}
+                        item={item}
+                        onDone={() => setEditingId(null)}
+                        onCancel={() => setEditingId(null)}
+                      />
+                      <ProductOptions
+                        quoteId={quoteId}
+                        quoteItemId={item.id}
+                        products={item.products ?? []}
+                      />
+                    </div>
                   </td>
                 </tr>
               ) : (

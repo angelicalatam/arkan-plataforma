@@ -170,14 +170,14 @@ export function parseQuoteWorkbook(buf: Buffer | ArrayBuffer): ParsedQuote {
     } else if (type === "producto") {
       if (work) {
         const pCost = num(r[7]); // coste de materiales del producto (col. 8)
+        const pBenefit = num(r[8]); // "Beneficios" del Excel = margen sobre el precio (0,10 = 10%)
         const pPrice = num(r[9]); // precio de cliente del producto (col. 10)
-        const pMargin = pCost > 0 ? round4((pPrice / pCost - 1) * 100) : 0;
         work.productMaterials += pCost;
         work.products.push({
           name: String(r[3] ?? "").trim() || "Producto",
           description: null,
           cost: round2(pCost),
-          margin_pct: pMargin,
+          margin_pct: round4(pBenefit * 100), // mismo % de beneficio que en el Excel
           price: pPrice,
         });
       }
