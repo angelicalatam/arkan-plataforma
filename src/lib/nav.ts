@@ -9,6 +9,7 @@ import {
   ShoppingBag,
   HardHat,
   ShoppingCart,
+  ClipboardList,
   Package,
   SquareCheckBig,
   TriangleAlert,
@@ -56,6 +57,7 @@ export const navGroups: NavGroup[] = [
       { label: "Productos", href: "/productos", icon: ShoppingBag },
       { label: "Obras", href: "/obras", icon: HardHat },
       { label: "Compras", href: "/compras", icon: ShoppingCart },
+      { label: "Órdenes de compra", href: "/ordenes-compra", icon: ClipboardList },
       { label: "Rentabilidad", href: "/rentabilidad", icon: TrendingUp },
       { label: "Materiales", href: "/materiales", icon: Package },
       { label: "Tareas", href: "/tareas", icon: SquareCheckBig },
@@ -93,5 +95,6 @@ export const quickActions: { label: string; href: string }[] = [
   { label: "Nueva obra", href: "/obras/nueva" },
   { label: "Nueva tarea", href: "/tareas/nueva" },
   { label: "Nueva compra", href: "/compras/nueva" },
+  { label: "Nueva orden de compra", href: "/ordenes-compra/nueva" },
   { label: "Nueva incidencia", href: "/incidencias/nueva" },
 ];

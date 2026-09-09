@@ -15,9 +15,9 @@ export function AppShell({ children, userName, userRole }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-ink-50">
+    <div className="flex h-screen overflow-hidden bg-ink-50 print:block print:h-auto print:overflow-visible print:bg-white">
       {/* Barra lateral fija (escritorio) */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block print:hidden">
         <Sidebar />
       </div>
 
@@ -44,12 +44,16 @@ export function AppShell({ children, userName, userRole }: AppShellProps) {
 
       {/* Columna principal */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar
-          onMenuClick={() => setMobileOpen(true)}
-          userName={userName}
-          userRole={userRole}
-        />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
+        <div className="print:hidden">
+          <Topbar
+            onMenuClick={() => setMobileOpen(true)}
+            userName={userName}
+            userRole={userRole}
+          />
+        </div>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 print:overflow-visible print:p-0">
+          {children}
+        </main>
       </div>
     </div>
   );
