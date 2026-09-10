@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { RelationType } from "./types";
+import type { RelationType, WarningSeverity } from "./types";
 
 type Result = { ok: true; id?: string } | { ok: false; error: string };
 
@@ -25,6 +25,11 @@ export type EmployeeInput = {
   hourly_cost?: number;
   active?: boolean;
   notes?: string | null;
+  dni?: string | null;
+  position?: string | null;
+  birth_date?: string | null;
+  address?: string | null;
+  start_date?: string | null;
 };
 
 export async function createEmployee(input: EmployeeInput): Promise<Result> {
@@ -54,6 +59,63 @@ export async function deleteEmployee(id: string): Promise<Result> {
   const { error } = await supabase.from("employees").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/equipo");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------
+// LLAMADOS DE ATENCIÓN
+// ---------------------------------------------------------------
+export type WarningInput = {
+  warn_date?: string | null;
+  reason: string;
+  severity?: WarningSeverity;
+  notes?: string | null;
+};
+
+export async function addWarning(employeeId: string, input: WarningInput): Promise<Result> {
+  if (!input.reason?.trim()) return { ok: false, error: "Indica el motivo del llamado." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("employee_warnings").insert(
+    clean({
+      employee_id: employeeId,
+      warn_date: input.warn_date || new Date().toISOString().slice(0, 10),
+      reason: input.reason.trim(),
+      severity: input.severity ?? "leve",
+      notes: input.notes ?? null,
+    }),
+  );
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/equipo/${employeeId}`);
+  return { ok: true };
+}
+
+export async function deleteWarning(id: string, employeeId: string): Promise<Result> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("employee_warnings").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/equipo/${employeeId}`);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------
+// NOTAS INTERNAS DE LA PERSONA
+// ---------------------------------------------------------------
+export async function addEmployeeNote(employeeId: string, content: string): Promise<Result> {
+  if (!content?.trim()) return { ok: false, error: "La nota no puede estar vacía." };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("employee_notes")
+    .insert({ employee_id: employeeId, content: content.trim() });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/equipo/${employeeId}`);
+  return { ok: true };
+}
+
+export async function deleteEmployeeNote(id: string, employeeId: string): Promise<Result> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("employee_notes").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/equipo/${employeeId}`);
   return { ok: true };
 }
 

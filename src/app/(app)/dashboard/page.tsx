@@ -28,12 +28,18 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getPendingFollowUps } from "@/lib/rfq/queries";
 import { followUpState } from "@/lib/rfq/types";
 import { getDueItemReminders } from "@/lib/projects/queries";
+import { getDueTasks, getTaskCounts } from "@/lib/tasks/queries";
 import { formatDate } from "@/lib/format";
 
 export default async function DashboardPage() {
-  const [followUps, reminders] = isSupabaseConfigured
-    ? await Promise.all([getPendingFollowUps(), getDueItemReminders()])
-    : [[], []];
+  const [followUps, reminders, dueTasks, taskCounts] = isSupabaseConfigured
+    ? await Promise.all([
+        getPendingFollowUps(),
+        getDueItemReminders(),
+        getDueTasks(),
+        getTaskCounts(),
+      ])
+    : [[], [], [], { open: 0, overdue: 0 }];
   const today = new Date().toISOString().slice(0, 10);
 
   return (
@@ -42,6 +48,40 @@ export default async function DashboardPage() {
         title="Panel principal"
         description="Resumen del estado comercial, de obras y financiero de ARKAN."
       />
+
+      {/* Tareas para hoy y vencidas */}
+      {dueTasks.length > 0 && (
+        <Card className="mb-8">
+          <CardHeader title={`Tareas para hoy y vencidas (${dueTasks.length})`} />
+          <ul className="divide-y divide-ink-100">
+            {dueTasks.map((t) => {
+              const overdue = !!t.due_date && t.due_date < today;
+              return (
+                <li key={t.id}>
+                  <Link
+                    href={"/tareas" as Route}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-ink-50"
+                  >
+                    <SquareCheckBig className={`h-5 w-5 shrink-0 ${overdue ? "text-red-500" : "text-amber-500"}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm text-ink-800">{t.title}</span>
+                        {overdue ? <Badge tone="red">Vencida</Badge> : <Badge tone="amber">Hoy</Badge>}
+                      </div>
+                      <p className="mt-0.5 text-xs text-ink-400">
+                        {t.assignee?.name ? <>{t.assignee.name} · </> : null}
+                        {t.project?.code || t.project?.name ? <>{t.project?.code || t.project?.name} · </> : null}
+                        {t.due_date ? formatDate(t.due_date) : ""}
+                      </p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-ink-300" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
 
       {/* Recordatorios de obra (notas de partida con fecha) */}
       {reminders.length > 0 && (
@@ -158,8 +198,8 @@ export default async function DashboardPage() {
 
       {/* Operaciones */}
       <Section title="Operaciones">
-        <StatCard label="Tareas pendientes" value={0} icon={SquareCheckBig} tone="ink" />
-        <StatCard label="Tareas vencidas" value={0} icon={Clock} tone="red" />
+        <StatCard label="Tareas pendientes" value={taskCounts.open} icon={SquareCheckBig} tone="ink" />
+        <StatCard label="Tareas vencidas" value={taskCounts.overdue} icon={Clock} tone="red" />
         <StatCard label="Compras pendientes" value={0} icon={ShoppingCart} tone="amber" />
         <StatCard label="Incidencias abiertas" value={0} icon={AlertTriangle} tone="amber" />
       </Section>

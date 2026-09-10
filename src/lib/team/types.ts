@@ -19,6 +19,45 @@ export type Employee = {
   hourly_cost: number;
   active: boolean;
   notes: string | null;
+  dni: string | null;
+  position: string | null;
+  birth_date: string | null;
+  address: string | null;
+  start_date: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WarningSeverity = "leve" | "grave" | "muy_grave";
+
+export const WARNING_SEVERITIES: {
+  value: WarningSeverity;
+  label: string;
+  tone: "amber" | "red" | "ink";
+}[] = [
+  { value: "leve", label: "Leve", tone: "amber" },
+  { value: "grave", label: "Grave", tone: "red" },
+  { value: "muy_grave", label: "Muy grave", tone: "red" },
+];
+
+export function warningSeverityInfo(severity: string) {
+  return WARNING_SEVERITIES.find((s) => s.value === severity) ?? WARNING_SEVERITIES[0];
+}
+
+export type EmployeeWarning = {
+  id: string;
+  employee_id: string;
+  warn_date: string;
+  reason: string;
+  severity: WarningSeverity;
+  notes: string | null;
+  created_at: string;
+};
+
+export type EmployeeNote = {
+  id: string;
+  employee_id: string;
+  content: string;
   created_at: string;
   updated_at: string;
 };

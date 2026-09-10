@@ -20,7 +20,16 @@ export function EmployeeForm({ employee }: { employee?: Employee }) {
     hourly_cost: employee?.hourly_cost ?? 0,
     active: employee?.active ?? true,
     notes: employee?.notes ?? "",
+    dni: employee?.dni ?? "",
+    position: employee?.position ?? "",
+    birth_date: employee?.birth_date ?? "",
+    address: employee?.address ?? "",
+    start_date: employee?.start_date ?? "",
   });
+  // El coste/hora se guarda como texto para no forzar un "0" delante.
+  const [hourly, setHourly] = useState(
+    employee?.hourly_cost != null && employee.hourly_cost !== 0 ? String(employee.hourly_cost) : "",
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +45,7 @@ export function EmployeeForm({ employee }: { employee?: Employee }) {
     }
     setLoading(true);
     setError(null);
-    const payload = { ...form, hourly_cost: Number(form.hourly_cost) || 0 };
+    const payload = { ...form, hourly_cost: Number(hourly) || 0 };
     const res = editing
       ? await updateEmployee(employee!.id, payload)
       : await createEmployee(payload);
@@ -75,16 +84,13 @@ export function EmployeeForm({ employee }: { employee?: Employee }) {
           </select>
         </Field>
         <Field label="Coste por hora (€)">
-          <input type="number" step="0.01" className={inputClass} value={form.hourly_cost ?? 0} onChange={(e) => set("hourly_cost", e.target.value === "" ? 0 : Number(e.target.value))} />
+          <input type="number" step="0.01" min="0" className={inputClass} value={hourly} onChange={(e) => setHourly(e.target.value)} placeholder="0,00" />
         </Field>
         <Field label="Teléfono">
           <input className={inputClass} value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value)} />
         </Field>
         <Field label="Email">
           <input type="email" className={inputClass} value={form.email ?? ""} onChange={(e) => set("email", e.target.value)} />
-        </Field>
-        <Field label="Notas" full>
-          <textarea rows={2} className={inputClass} value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)} />
         </Field>
         <Field label="Estado" full>
           <label className="flex items-center gap-2 text-sm text-ink-700">
@@ -94,8 +100,26 @@ export function EmployeeForm({ employee }: { employee?: Employee }) {
               onChange={(e) => set("active", e.target.checked)}
               className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
             />
-            Activo (disponible para asignar horas)
+            Activo (disponible para asignar horas y tareas)
           </label>
+        </Field>
+      </FormSection>
+
+      <FormSection title="Datos personales">
+        <Field label="DNI / NIE">
+          <input className={inputClass} value={form.dni ?? ""} onChange={(e) => set("dni", e.target.value)} />
+        </Field>
+        <Field label="Cargo">
+          <input className={inputClass} value={form.position ?? ""} onChange={(e) => set("position", e.target.value)} placeholder="Ej. Jefe de obra" />
+        </Field>
+        <Field label="Fecha de nacimiento">
+          <input type="date" className={inputClass} value={form.birth_date ?? ""} onChange={(e) => set("birth_date", e.target.value)} />
+        </Field>
+        <Field label="Fecha de incorporación">
+          <input type="date" className={inputClass} value={form.start_date ?? ""} onChange={(e) => set("start_date", e.target.value)} />
+        </Field>
+        <Field label="Dirección" full>
+          <input className={inputClass} value={form.address ?? ""} onChange={(e) => set("address", e.target.value)} />
         </Field>
       </FormSection>
 

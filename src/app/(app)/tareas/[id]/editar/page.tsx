@@ -1,0 +1,37 @@
+import Link from "next/link";
+import type { Route } from "next";
+import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { getTask } from "@/lib/tasks/queries";
+import { getEmployeeOptions } from "@/lib/team/queries";
+import { getProjectOptions } from "@/lib/projects/queries";
+import { TaskForm } from "../../TaskForm";
+
+export default async function EditarTareaPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const [task, employees, projects] = await Promise.all([
+    getTask(id),
+    getEmployeeOptions(),
+    getProjectOptions(),
+  ]);
+  if (!task) notFound();
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      <Link
+        href={"/tareas" as Route}
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-800"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Tareas
+      </Link>
+      <PageHeader title="Editar tarea" description="Modifica los datos de la tarea." />
+      <TaskForm employees={employees.map((e) => ({ id: e.id, name: e.name }))} projects={projects} task={task} />
+    </div>
+  );
+}

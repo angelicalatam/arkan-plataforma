@@ -68,7 +68,7 @@ export function EmployeesTable({ employees }: { employees: Employee[] }) {
             {filtered.map((e) => (
               <tr key={e.id} className="border-b border-ink-50 last:border-0 hover:bg-ink-50">
                 <td className="px-4 py-3">
-                  <Link href={`/equipo/${e.id}/editar` as Route} className="font-medium text-ink-900 hover:text-brand-700">
+                  <Link href={`/equipo/${e.id}` as Route} className="font-medium text-ink-900 hover:text-brand-700">
                     {e.name}
                   </Link>
                   {e.role && <div className="text-xs text-ink-400">{e.role}</div>}

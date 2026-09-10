@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Employee, TimeEntry } from "./types";
+import type { Employee, EmployeeNote, EmployeeWarning, TimeEntry } from "./types";
 
 /** Lista de todo el equipo. */
 export async function getEmployees(): Promise<Employee[]> {
@@ -26,6 +26,28 @@ export async function getEmployeeOptions(): Promise<
     .eq("active", true)
     .order("name");
   return (data ?? []) as { id: string; name: string; hourly_cost: number }[];
+}
+
+/** Llamados de atención de una persona. */
+export async function getEmployeeWarnings(employeeId: string): Promise<EmployeeWarning[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("employee_warnings")
+    .select("*")
+    .eq("employee_id", employeeId)
+    .order("warn_date", { ascending: false });
+  return (data as EmployeeWarning[]) ?? [];
+}
+
+/** Notas internas de una persona. */
+export async function getEmployeeNotes(employeeId: string): Promise<EmployeeNote[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("employee_notes")
+    .select("*")
+    .eq("employee_id", employeeId)
+    .order("created_at", { ascending: false });
+  return (data as EmployeeNote[]) ?? [];
 }
 
 /** Registros de horas de una obra. */
