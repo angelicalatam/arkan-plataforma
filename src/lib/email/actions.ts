@@ -93,3 +93,64 @@ export async function sendAppointmentEmail(input: {
     };
   }
 }
+
+/**
+ * Envía un correo con archivos adjuntos (para las peticiones de oferta).
+ * Los adjuntos se descargan desde su URL pública y se añaden al correo.
+ */
+export async function sendRfqEmail(input: {
+  to: string[];
+  subject: string;
+  message: string;
+  attachments?: { filename: string; url: string }[];
+}): Promise<Result> {
+  if (!isEmailConfigured) {
+    return { ok: false, error: "El correo todavía no está configurado en la plataforma." };
+  }
+  const recipients = Array.from(new Set(input.to.filter(Boolean)));
+  if (recipients.length === 0) {
+    return { ok: false, error: "No hay destinatarios con correo válido." };
+  }
+
+  // Descargar los adjuntos desde Storage.
+  const attachments: { filename: string; content: Buffer }[] = [];
+  for (const a of input.attachments ?? []) {
+    try {
+      const r = await fetch(a.url);
+      if (!r.ok) continue;
+      attachments.push({ filename: a.filename, content: Buffer.from(await r.arrayBuffer()) });
+    } catch {
+      // Si un adjunto falla, se omite y se sigue con el resto.
+    }
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
+    });
+
+    await transporter.sendMail({
+      from: `ARKAN Reformas <${GMAIL_USER}>`,
+      to: recipients,
+      subject: input.subject,
+      text: input.message,
+      html: `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#0f172a;white-space:pre-wrap">${escHtml(
+        input.message,
+      )}</div>`,
+      attachments,
+    });
+
+    return { ok: true, sent: recipients.length };
+  } catch (e) {
+    return {
+      ok: false,
+      error:
+        e instanceof Error
+          ? e.message
+          : "No se pudo enviar el correo. Revisa la contraseña de aplicación.",
+    };
+  }
+}

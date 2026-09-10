@@ -5,6 +5,7 @@ import { ArrowLeft, Pencil, Phone, Mail, Globe, MapPin } from "lucide-react";
 import { getSupplier, getSupplierContacts } from "@/lib/crm/queries";
 import { getSupplierConversations } from "@/lib/conversations/queries";
 import { getSupplierOperations } from "@/lib/operations/queries";
+import { getSupplierRfqs } from "@/lib/rfq/queries";
 import { getProjectOptions } from "@/lib/projects/queries";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -14,6 +15,7 @@ import { DeleteSupplierButton } from "./DeleteSupplierButton";
 import { SupplierConversations } from "./SupplierConversations";
 import { SupplierOperations } from "./SupplierOperations";
 import { SupplierContacts } from "./SupplierContacts";
+import { SupplierRfqs } from "./SupplierRfqs";
 
 export default async function ProveedorDetallePage({
   params,
@@ -21,11 +23,12 @@ export default async function ProveedorDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [supplier, contacts, conversations, operations, projectOptions] = await Promise.all([
+  const [supplier, contacts, conversations, operations, rfqs, projectOptions] = await Promise.all([
     getSupplier(id),
     getSupplierContacts(id),
     getSupplierConversations(id),
     getSupplierOperations(id),
+    getSupplierRfqs(id),
     getProjectOptions(),
   ]);
   if (!supplier) notFound();
@@ -148,6 +151,10 @@ export default async function ProveedorDetallePage({
 
       <div className="mt-5">
         <SupplierContacts supplierId={supplier.id} contacts={contacts} />
+      </div>
+
+      <div className="mt-5">
+        <SupplierRfqs supplierId={supplier.id} rfqs={rfqs} projectOptions={projectOptions} />
       </div>
 
       <div className="mt-5">

@@ -1,3 +1,5 @@
+import Link from "next/link";
+import type { Route } from "next";
 import {
   UserPlus,
   Users,
@@ -16,18 +18,64 @@ import {
   Clock,
   ShoppingCart,
   Info,
+  ChevronRight,
 } from "lucide-react";
 import { StatCard } from "@/components/ui/StatCard";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Card, CardHeader } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { getPendingFollowUps } from "@/lib/rfq/queries";
+import { followUpState } from "@/lib/rfq/types";
+import { formatDate } from "@/lib/format";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const followUps = isSupabaseConfigured ? await getPendingFollowUps() : [];
+
   return (
     <div>
       <PageHeader
         title="Panel principal"
         description="Resumen del estado comercial, de obras y financiero de ARKAN."
       />
+
+      {/* Alertas de seguimiento de peticiones de oferta */}
+      {followUps.length > 0 && (
+        <Card className="mb-8">
+          <CardHeader title={`Peticiones de oferta en espera (${followUps.length})`} />
+          <ul className="divide-y divide-ink-100">
+            {followUps.map((r) => {
+              const fu = followUpState(r);
+              return (
+                <li key={r.id}>
+                  <Link
+                    href={`/proveedores/${r.supplier_id}/peticiones/${r.id}` as Route}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-ink-50"
+                  >
+                    <CalendarClock
+                      className={`h-5 w-5 shrink-0 ${
+                        fu === "vencido" ? "text-red-500" : fu === "hoy" ? "text-amber-500" : "text-ink-300"
+                      }`}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium text-ink-900">{r.subject}</span>
+                        {fu === "vencido" && <Badge tone="red">Vencido</Badge>}
+                        {fu === "hoy" && <Badge tone="amber">Hoy</Badge>}
+                      </div>
+                      <p className="mt-0.5 text-xs text-ink-400">
+                        {r.supplier?.name}
+                        {r.follow_up_date ? <> · Seguimiento: {formatDate(r.follow_up_date)}</> : <> · sin fecha de seguimiento</>}
+                      </p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-ink-300" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
 
       {!isSupabaseConfigured && (
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-brand-200 bg-brand-50 p-4">
