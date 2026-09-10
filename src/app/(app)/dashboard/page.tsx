@@ -27,10 +27,14 @@ import { Badge } from "@/components/ui/Badge";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getPendingFollowUps } from "@/lib/rfq/queries";
 import { followUpState } from "@/lib/rfq/types";
+import { getDueItemReminders } from "@/lib/projects/queries";
 import { formatDate } from "@/lib/format";
 
 export default async function DashboardPage() {
-  const followUps = isSupabaseConfigured ? await getPendingFollowUps() : [];
+  const [followUps, reminders] = isSupabaseConfigured
+    ? await Promise.all([getPendingFollowUps(), getDueItemReminders()])
+    : [[], []];
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <div>
@@ -38,6 +42,39 @@ export default async function DashboardPage() {
         title="Panel principal"
         description="Resumen del estado comercial, de obras y financiero de ARKAN."
       />
+
+      {/* Recordatorios de obra (notas de partida con fecha) */}
+      {reminders.length > 0 && (
+        <Card className="mb-8">
+          <CardHeader title={`Recordatorios de obra (${reminders.length})`} />
+          <ul className="divide-y divide-ink-100">
+            {reminders.map((r) => {
+              const overdue = r.remind_on < today;
+              return (
+                <li key={r.id}>
+                  <Link
+                    href={`/obras/${r.project_id}` as Route}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-ink-50"
+                  >
+                    <CalendarClock className={`h-5 w-5 shrink-0 ${overdue ? "text-red-500" : "text-amber-500"}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm text-ink-800">{r.content}</span>
+                        {overdue ? <Badge tone="red">Vencido</Badge> : <Badge tone="amber">Hoy</Badge>}
+                      </div>
+                      <p className="mt-0.5 text-xs text-ink-400">
+                        {r.project?.code || r.project?.name || "Obra"}
+                        {r.item?.description ? <> · {r.item.description}</> : null} · {formatDate(r.remind_on)}
+                      </p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-ink-300" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
 
       {/* Alertas de seguimiento de peticiones de oferta */}
       {followUps.length > 0 && (

@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { inputClass } from "@/components/ui/Form";
+import { ItemNotes, ItemNotesToggle } from "./ItemNotes";
 
 export function ProjectItemProgress({
   projectId,
@@ -27,6 +28,10 @@ export function ProjectItemProgress({
   const [pct, setPct] = useState<number>(Number(item.pct_done) || 0);
   const [status, setStatus] = useState<ItemStatus>(item.item_status);
   const [saving, setSaving] = useState(false);
+  const notes = item.item_notes ?? [];
+  const [showNotes, setShowNotes] = useState(
+    notes.some((n) => !n.done && n.remind_on),
+  );
 
   async function save(next: { pct_done?: number; item_status?: ItemStatus }) {
     setSaving(true);
@@ -66,6 +71,7 @@ export function ProjectItemProgress({
         </div>
         <div className="flex items-center gap-2">
           {saving && <Loader2 className="h-4 w-4 animate-spin text-ink-400" />}
+          <ItemNotesToggle count={notes.length} open={showNotes} onClick={() => setShowNotes((v) => !v)} />
           <Badge tone={si.tone}>{si.label}</Badge>
         </div>
       </div>
@@ -102,6 +108,8 @@ export function ProjectItemProgress({
           </select>
         </div>
       </div>
+
+      {showNotes && <ItemNotes projectId={projectId} itemId={item.id} notes={notes} />}
     </div>
   );
 }

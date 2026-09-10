@@ -71,6 +71,30 @@ export function pctFromStatus(status: ItemStatus, currentPct: number): number {
   return Number(currentPct) || 0;
 }
 
+export type ProjectItemNote = {
+  id: string;
+  project_item_id: string;
+  project_id: string;
+  content: string;
+  remind_on: string | null;
+  done: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Estado de un recordatorio: vencido / hoy / próximo / sin fecha / atendido. */
+export function reminderState(note: {
+  remind_on: string | null;
+  done: boolean;
+}): "vencido" | "hoy" | "proximo" | "sin_fecha" | "atendido" {
+  if (note.done) return "atendido";
+  if (!note.remind_on) return "sin_fecha";
+  const today = new Date().toISOString().slice(0, 10);
+  if (note.remind_on < today) return "vencido";
+  if (note.remind_on === today) return "hoy";
+  return "proximo";
+}
+
 export type ProjectItem = {
   id: string;
   project_id: string;
@@ -91,6 +115,7 @@ export type ProjectItem = {
   planned_end: string | null;
   notes: string | null;
   position: number;
+  item_notes?: ProjectItemNote[];
 };
 
 export type ProjectChapter = {

@@ -213,6 +213,54 @@ export async function resetProjectSchedule(projectId: string): Promise<Result> {
   return { ok: true };
 }
 
+// ---------------------------------------------------------------
+// NOTAS / RECORDATORIOS POR PARTIDA
+// ---------------------------------------------------------------
+export async function addItemNote(
+  projectItemId: string,
+  projectId: string,
+  input: { content: string; remind_on?: string | null },
+): Promise<Result> {
+  if (!input.content?.trim()) return { ok: false, error: "La nota no puede estar vacía." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("project_item_notes").insert({
+    project_item_id: projectItemId,
+    project_id: projectId,
+    content: input.content.trim(),
+    remind_on: input.remind_on || null,
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/obras/${projectId}`);
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+export async function updateItemNote(
+  id: string,
+  projectId: string,
+  input: { content?: string; remind_on?: string | null; done?: boolean },
+): Promise<Result> {
+  const supabase = await createClient();
+  const patch: Record<string, unknown> = {};
+  if (input.content !== undefined) patch.content = input.content.trim();
+  if (input.remind_on !== undefined) patch.remind_on = input.remind_on || null;
+  if (input.done !== undefined) patch.done = input.done;
+  const { error } = await supabase.from("project_item_notes").update(patch).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/obras/${projectId}`);
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+export async function deleteItemNote(id: string, projectId: string): Promise<Result> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("project_item_notes").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/obras/${projectId}`);
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 export async function updateItemProgress(
   itemId: string,
   projectId: string,
