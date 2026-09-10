@@ -28,19 +28,24 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getPendingFollowUps } from "@/lib/rfq/queries";
 import { followUpState } from "@/lib/rfq/types";
 import { getDueItemReminders } from "@/lib/projects/queries";
-import { getDueTasks, getTaskCounts } from "@/lib/tasks/queries";
+import { getAgendaTasks, getTaskCounts } from "@/lib/tasks/queries";
+import type { Task } from "@/lib/tasks/types";
 import { formatDate } from "@/lib/format";
 
 export default async function DashboardPage() {
-  const [followUps, reminders, dueTasks, taskCounts] = isSupabaseConfigured
+  const [followUps, reminders, agenda, taskCounts] = isSupabaseConfigured
     ? await Promise.all([
         getPendingFollowUps(),
         getDueItemReminders(),
-        getDueTasks(),
+        getAgendaTasks(),
         getTaskCounts(),
       ])
     : [[], [], [], { open: 0, overdue: 0 }];
   const today = new Date().toISOString().slice(0, 10);
+
+  const overdueTasks = agenda.filter((t) => t.due_date! < today);
+  const todayTasks = agenda.filter((t) => t.due_date === today);
+  const upcomingTasks = agenda.filter((t) => t.due_date! > today);
 
   return (
     <div>
@@ -49,37 +54,13 @@ export default async function DashboardPage() {
         description="Resumen del estado comercial, de obras y financiero de ARKAN."
       />
 
-      {/* Tareas para hoy y vencidas */}
-      {dueTasks.length > 0 && (
+      {/* Agenda de tareas: atrasadas, hoy y próximas */}
+      {agenda.length > 0 && (
         <Card className="mb-8">
-          <CardHeader title={`Tareas para hoy y vencidas (${dueTasks.length})`} />
-          <ul className="divide-y divide-ink-100">
-            {dueTasks.map((t) => {
-              const overdue = !!t.due_date && t.due_date < today;
-              return (
-                <li key={t.id}>
-                  <Link
-                    href={"/tareas" as Route}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-ink-50"
-                  >
-                    <SquareCheckBig className={`h-5 w-5 shrink-0 ${overdue ? "text-red-500" : "text-amber-500"}`} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm text-ink-800">{t.title}</span>
-                        {overdue ? <Badge tone="red">Vencida</Badge> : <Badge tone="amber">Hoy</Badge>}
-                      </div>
-                      <p className="mt-0.5 text-xs text-ink-400">
-                        {t.assignee?.name ? <>{t.assignee.name} · </> : null}
-                        {t.project?.code || t.project?.name ? <>{t.project?.code || t.project?.name} · </> : null}
-                        {t.due_date ? formatDate(t.due_date) : ""}
-                      </p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-ink-300" />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <CardHeader title="Agenda de tareas" />
+          <TaskGroup title="Atrasadas" tone="red" tasks={overdueTasks} />
+          <TaskGroup title="Para hoy" tone="amber" tasks={todayTasks} />
+          <TaskGroup title="Próximas" tone="ink" tasks={upcomingTasks} />
         </Card>
       )}
 
@@ -203,6 +184,47 @@ export default async function DashboardPage() {
         <StatCard label="Compras pendientes" value={0} icon={ShoppingCart} tone="amber" />
         <StatCard label="Incidencias abiertas" value={0} icon={AlertTriangle} tone="amber" />
       </Section>
+    </div>
+  );
+}
+
+function TaskGroup({
+  title,
+  tone,
+  tasks,
+}: {
+  title: string;
+  tone: "red" | "amber" | "ink";
+  tasks: Task[];
+}) {
+  if (tasks.length === 0) return null;
+  const dot = tone === "red" ? "bg-red-500" : tone === "amber" ? "bg-amber-500" : "bg-ink-300";
+  return (
+    <div className="border-b border-ink-100 last:border-0">
+      <div className="flex items-center gap-2 bg-ink-50/60 px-4 py-1.5">
+        <span className={`h-2 w-2 rounded-full ${dot}`} />
+        <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">
+          {title} ({tasks.length})
+        </span>
+      </div>
+      <ul className="divide-y divide-ink-100">
+        {tasks.map((t) => (
+          <li key={t.id}>
+            <Link href={"/tareas" as Route} className="flex items-center gap-3 px-4 py-2.5 hover:bg-ink-50">
+              <SquareCheckBig className="h-4 w-4 shrink-0 text-ink-300" />
+              <div className="min-w-0 flex-1">
+                <span className="text-sm text-ink-800">{t.title}</span>
+                <p className="mt-0.5 text-xs text-ink-400">
+                  {t.assignee?.name ? <>{t.assignee.name} · </> : null}
+                  {t.project?.code || t.project?.name ? <>{t.project?.code || t.project?.name} · </> : null}
+                  {t.due_date ? formatDate(t.due_date) : ""}
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-ink-300" />
+            </Link>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

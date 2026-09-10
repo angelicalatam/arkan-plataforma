@@ -32,6 +32,18 @@ export async function getProjectTasks(projectId: string): Promise<Task[]> {
   return (data as Task[]) ?? [];
 }
 
+/** Tareas abiertas con fecha límite (para la agenda del panel: atrasadas, hoy y próximas). */
+export async function getAgendaTasks(): Promise<Task[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("tasks")
+    .select(SELECT)
+    .in("status", ["pendiente", "en_proceso"])
+    .not("due_date", "is", null)
+    .order("due_date", { ascending: true });
+  return (data as Task[]) ?? [];
+}
+
 /** Tareas abiertas con fecha límite vencida o para hoy (para las alertas). */
 export async function getDueTasks(): Promise<Task[]> {
   const supabase = await createClient();
