@@ -25,8 +25,11 @@ import { getProjectTimeEntries } from "@/lib/team/queries";
 import { getEmployeeOptions } from "@/lib/team/queries";
 import { laborCost } from "@/lib/team/types";
 import { computeProfit } from "@/lib/profitability/types";
+import { getProjectMaterialRequests, getMaterialOptions } from "@/lib/materials/queries";
+import { getSupplierOptions } from "@/lib/crm/queries";
 import { ProjectLabor } from "./ProjectLabor";
 import { ProjectSchedule } from "./ProjectSchedule";
+import { MaterialNeeds } from "./MaterialNeeds";
 import {
   projectStatusInfo,
   projectEconomics,
@@ -48,15 +51,27 @@ export default async function ObraDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [project, conversations, operations, purchases, timeEntries, employeeOptions] =
-    await Promise.all([
-      getProject(id),
-      getProjectConversations(id),
-      getProjectOperations(id),
-      getProjectPurchases(id),
-      getProjectTimeEntries(id),
-      getEmployeeOptions(),
-    ]);
+  const [
+    project,
+    conversations,
+    operations,
+    purchases,
+    timeEntries,
+    employeeOptions,
+    materialRequests,
+    materialOptions,
+    supplierOptions,
+  ] = await Promise.all([
+    getProject(id),
+    getProjectConversations(id),
+    getProjectOperations(id),
+    getProjectPurchases(id),
+    getProjectTimeEntries(id),
+    getEmployeeOptions(),
+    getProjectMaterialRequests(id),
+    getMaterialOptions(),
+    getSupplierOptions(),
+  ]);
   if (!project) notFound();
 
   const materialCost = purchasesCost(purchases);
@@ -273,6 +288,16 @@ export default async function ObraDetallePage({
           entries={timeEntries}
           employees={employeeOptions}
           items={itemOptions}
+        />
+      </div>
+
+      {/* Materiales necesarios */}
+      <div className="mt-5">
+        <MaterialNeeds
+          projectId={project.id}
+          requests={materialRequests}
+          materials={materialOptions}
+          suppliers={supplierOptions}
         />
       </div>
 
