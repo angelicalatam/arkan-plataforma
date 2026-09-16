@@ -31,6 +31,7 @@ export type MaterialInput = {
   image_url?: string | null;
   tax_rate?: number | null;
   description?: string | null;
+  product_url?: string | null;
 };
 
 export async function createMaterial(input: MaterialInput): Promise<Result> {

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { Search, Package } from "lucide-react";
+import { Search, Package, ExternalLink } from "lucide-react";
 import type { Material } from "@/lib/materials/types";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -72,9 +72,22 @@ export function MaterialsCatalog({ materials }: { materials: Material[] }) {
                       )}
                     </span>
                     <div className="min-w-0">
-                      <Link href={`/materiales/catalogo/${m.id}/editar` as Route} className="font-medium text-ink-900 hover:text-brand-700">
-                        {m.name}
-                      </Link>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Link href={`/materiales/catalogo/${m.id}/editar` as Route} className="font-medium text-ink-900 hover:text-brand-700">
+                          {m.name}
+                        </Link>
+                        {m.product_url && (
+                          <a
+                            href={m.product_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-ink-400 hover:text-brand-700"
+                            title="Abrir producto en la web del proveedor"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                      </span>
                       {m.pack_unit && m.pack_quantity ? (
                         <div className="text-xs text-ink-400">
                           1 {m.pack_unit} = {m.pack_quantity} {m.unit}

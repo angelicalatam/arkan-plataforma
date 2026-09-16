@@ -2,12 +2,100 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, ExternalLink } from "lucide-react";
 import { createMaterial, updateMaterial, type MaterialInput } from "@/lib/materials/actions";
 import { materialPrices, withTax, type Material } from "@/lib/materials/types";
 import { inputClass, FormSection, Field } from "@/components/ui/Form";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { formatCurrency } from "@/lib/format";
+
+const CATEGORIES = [
+  "Albañilería",
+  "Demoliciones",
+  "Pladur / Yeso laminado",
+  "Escayola / Falsos techos",
+  "Fontanería",
+  "Saneamiento",
+  "Electricidad",
+  "Iluminación",
+  "Climatización / Calefacción",
+  "Carpintería de madera",
+  "Carpintería de aluminio / PVC",
+  "Cerrajería / Metalistería",
+  "Vidriería",
+  "Pintura",
+  "Alicatado / Solado",
+  "Cerámica / Porcelánico",
+  "Piedra / Mármol",
+  "Aislamiento",
+  "Impermeabilización",
+  "Cubiertas",
+  "Fachadas",
+  "Áridos / Cementos / Morteros",
+  "Hormigón",
+  "Sanitarios",
+  "Griferías",
+  "Mobiliario de cocina",
+  "Electrodomésticos",
+  "Ferretería / Tornillería",
+  "Herramientas",
+  "Adhesivos / Selladores",
+  "Seguridad / EPIs",
+  "Jardinería / Exterior",
+  "Otros",
+];
+
+const PACK_FORMATS = [
+  "palet",
+  "caja",
+  "saco",
+  "bidón",
+  "bote",
+  "lata",
+  "cartucho",
+  "rollo",
+  "plancha",
+  "panel",
+  "tubo",
+  "bolsa",
+  "fardo",
+  "atado",
+  "pack",
+  "juego",
+  "contenedor",
+  "big bag",
+];
+
+const UNITS = [
+  "ud",
+  "m",
+  "m²",
+  "m³",
+  "ml",
+  "cm",
+  "mm",
+  "kg",
+  "g",
+  "t",
+  "l",
+  "h",
+  "día",
+  "palet",
+  "caja",
+  "saco",
+  "bidón",
+  "bote",
+  "lata",
+  "cartucho",
+  "rollo",
+  "plancha",
+  "panel",
+  "tubo",
+  "bolsa",
+  "juego",
+  "par",
+  "global",
+];
 
 export function MaterialForm({
   suppliers,
@@ -31,6 +119,7 @@ export function MaterialForm({
     piece_unit: material?.piece_unit ?? "",
     description: material?.description ?? "",
     image_url: material?.image_url ?? null,
+    product_url: material?.product_url ?? "",
   });
   const [price, setPrice] = useState(
     material?.reference_price != null && material.reference_price !== 0 ? String(material.reference_price) : "",
@@ -94,10 +183,10 @@ export function MaterialForm({
           <textarea rows={2} className={inputClass} value={form.description ?? ""} onChange={(e) => set("description", e.target.value)} placeholder="Ej. Panot hidráulico 20x20, acabado gris, uso exterior" />
         </Field>
         <Field label="Categoría">
-          <input className={inputClass} value={form.category ?? ""} onChange={(e) => set("category", e.target.value)} placeholder="Ej. Pladur, Fontanería…" />
+          <SelectWithOther value={form.category ?? ""} onChange={(v) => set("category", v)} options={CATEGORIES} />
         </Field>
         <Field label="Unidad">
-          <input className={inputClass} value={form.unit ?? ""} onChange={(e) => set("unit", e.target.value)} placeholder="ud, m², ml, kg…" />
+          <SelectWithOther value={form.unit ?? ""} onChange={(v) => set("unit", v)} options={UNITS} />
         </Field>
         <Field label="Precio de referencia (€)">
           <input type="number" step="0.01" min="0" className={inputClass} value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0,00" />
@@ -114,6 +203,27 @@ export function MaterialForm({
         </Field>
         <Field label="Referencia del proveedor">
           <input className={inputClass} value={form.reference ?? ""} onChange={(e) => set("reference", e.target.value)} />
+        </Field>
+        <Field label="Enlace al producto (web del proveedor)" full>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              className={inputClass}
+              value={form.product_url ?? ""}
+              onChange={(e) => set("product_url", e.target.value)}
+              placeholder="https://www.proveedor.com/producto…"
+            />
+            {form.product_url && (
+              <a
+                href={form.product_url ?? "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-ink-200 bg-white px-3 text-sm font-medium text-brand-700 hover:bg-ink-50"
+              >
+                <ExternalLink className="h-4 w-4" /> Abrir
+              </a>
+            )}
+          </div>
         </Field>
         <Field label="Notas" full>
           <textarea rows={2} className={inputClass} value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)} />
@@ -132,14 +242,14 @@ export function MaterialForm({
       </FormSection>
 
       <FormSection title="Presentación y precios (opcional)">
-        <Field label="Formato / envase" >
-          <input className={inputClass} value={form.pack_unit ?? ""} onChange={(e) => set("pack_unit", e.target.value)} placeholder="Ej. palet, caja, saco" />
+        <Field label="Formato / envase">
+          <SelectWithOther value={form.pack_unit ?? ""} onChange={(v) => set("pack_unit", v)} options={PACK_FORMATS} />
         </Field>
         <Field label={`Unidades de compra por formato (${form.unit || "ud"})`}>
           <input type="number" step="0.001" min="0" className={inputClass} value={packQty} onChange={(e) => setPackQty(e.target.value)} placeholder="Ej. 23" />
         </Field>
-        <Field label="Nombre de la pieza">
-          <input className={inputClass} value={form.piece_unit ?? ""} onChange={(e) => set("piece_unit", e.target.value)} placeholder="Ej. panot, baldosa" />
+        <Field label="Unidad de pieza">
+          <SelectWithOther value={form.piece_unit ?? ""} onChange={(v) => set("piece_unit", v)} options={UNITS} />
         </Field>
         <Field label="Piezas por formato">
           <input type="number" step="0.001" min="0" className={inputClass} value={pieces} onChange={(e) => setPieces(e.target.value)} placeholder="Ej. 575" />
@@ -191,6 +301,67 @@ export function MaterialForm({
         </button>
       </div>
     </form>
+  );
+}
+
+/** Desplegable con una opción "Otra…" que permite escribir un valor libre. */
+function SelectWithOther({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  const [other, setOther] = useState(value !== "" && !options.includes(value));
+
+  if (other) {
+    return (
+      <div className="flex gap-2">
+        <input
+          autoFocus
+          className={inputClass}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Escribe el valor…"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            setOther(false);
+            onChange("");
+          }}
+          className="shrink-0 rounded-lg border border-ink-200 bg-white px-3 text-sm text-ink-600 hover:bg-ink-50"
+          title="Volver a la lista"
+        >
+          Lista
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <select
+      className={inputClass}
+      value={options.includes(value) ? value : ""}
+      onChange={(e) => {
+        if (e.target.value === "__otra__") {
+          setOther(true);
+          onChange("");
+        } else {
+          onChange(e.target.value);
+        }
+      }}
+    >
+      <option value="">— Elegir —</option>
+      {options.map((o) => (
+        <option key={o} value={o}>
+          {o}
+        </option>
+      ))}
+      <option value="__otra__">Otra… (escribir)</option>
+    </select>
   );
 }
 

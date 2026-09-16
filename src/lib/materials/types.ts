@@ -19,6 +19,7 @@ export type Material = {
   image_url: string | null;
   tax_rate: number;
   description: string | null;
+  product_url: string | null;
   created_at: string;
   updated_at: string;
   supplier?: { id: string; name: string } | null;
