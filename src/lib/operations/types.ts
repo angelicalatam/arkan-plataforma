@@ -17,6 +17,7 @@ export type OperationDocument = {
   id: string;
   operation_id: string;
   doc_type: DocType;
+  title: string | null;
   name: string | null;
   url: string;
   path: string;

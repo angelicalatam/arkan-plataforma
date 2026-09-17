@@ -118,6 +118,44 @@ export async function upsertDocument(
   return { ok: true };
 }
 
+/** Añade un documento a la operación (permite varios del mismo tipo, con título). */
+export async function addDocument(
+  operationId: string,
+  supplierId: string,
+  docType: DocType,
+  input: {
+    title?: string | null;
+    name: string;
+    url: string;
+    path: string;
+    mime_type?: string | null;
+    size?: number | null;
+    doc_date?: string | null;
+  },
+): Promise<Result> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("operation_documents").insert({
+    operation_id: operationId,
+    doc_type: docType,
+    title: input.title ?? null,
+    name: input.name,
+    url: input.url,
+    path: input.path,
+    mime_type: input.mime_type ?? null,
+    size: input.size ?? null,
+    doc_date: input.doc_date ?? null,
+  });
+  if (error) return { ok: false, error: error.message };
+
+  const { data: op } = await supabase
+    .from("supplier_operations")
+    .select("project_id")
+    .eq("id", operationId)
+    .maybeSingle();
+  await revalidateOperation(supplierId, operationId, op?.project_id);
+  return { ok: true };
+}
+
 export async function deleteDocument(
   id: string,
   operationId: string,

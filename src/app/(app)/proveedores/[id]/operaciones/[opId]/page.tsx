@@ -12,7 +12,7 @@ import {
 } from "@/lib/operations/types";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { formatCurrency } from "@/lib/format";
-import { OperationDocSlot } from "./OperationDocSlot";
+import { OperationDocGroup } from "./OperationDocGroup";
 import { DeleteOperationButton } from "./DeleteOperationButton";
 
 export default async function OperacionPage({
@@ -25,9 +25,12 @@ export default async function OperacionPage({
   if (!op) notFound();
 
   const status = operationStatus(op.documents);
-  const docByType = new Map<DocType, OperationDocument | undefined>();
+  const docsByType = new Map<DocType, OperationDocument[]>();
   for (const d of DOC_TYPES) {
-    docByType.set(d.value, (op.documents ?? []).find((x) => x.doc_type === d.value));
+    docsByType.set(
+      d.value,
+      (op.documents ?? []).filter((x) => x.doc_type === d.value),
+    );
   }
 
   return (
@@ -97,19 +100,19 @@ export default async function OperacionPage({
         </div>
       )}
 
-      {/* Las 4 ranuras de documentos */}
+      {/* Documentos por tipo (varios por tipo, con título) */}
       <Card>
         <CardHeader title="Documentos de la operación" />
-        <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 p-4">
           {DOC_TYPES.map((d) => (
-            <OperationDocSlot
+            <OperationDocGroup
               key={d.value}
               operationId={op.id}
               supplierId={supplierId}
               docType={d.value}
               index={d.order}
               label={d.label}
-              document={docByType.get(d.value)}
+              documents={docsByType.get(d.value) ?? []}
             />
           ))}
         </div>
