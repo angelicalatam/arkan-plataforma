@@ -122,6 +122,21 @@ export type SupplierContact = {
   updated_at: string;
 };
 
+/** Máximo de personas de contacto por cliente. */
+export const MAX_CUSTOMER_CONTACTS = 10;
+
+export type CustomerContact = {
+  id: string;
+  customer_id: string;
+  name: string;
+  role: string | null;
+  phone: string | null;
+  email: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Activity = {
   id: string;
   type: ActivityType;

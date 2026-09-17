@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { ActivityType, CustomerType } from "./types";
+import { MAX_CUSTOMER_CONTACTS } from "./types";
 
 type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
@@ -234,6 +235,62 @@ export async function deleteSupplierContact(
   const { error } = await supabase.from("supplier_contacts").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/proveedores/${supplierId}`);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------
+// PERSONAS DE CONTACTO DEL CLIENTE (hasta 10 por cliente)
+// ---------------------------------------------------------------
+export type CustomerContactInput = {
+  name: string;
+  role?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  notes?: string | null;
+};
+
+export async function addCustomerContact(
+  customerId: string,
+  input: CustomerContactInput,
+): Promise<ActionResult> {
+  if (!input.name?.trim()) return { ok: false, error: "El nombre es obligatorio." };
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("customer_contacts")
+    .select("id", { count: "exact", head: true })
+    .eq("customer_id", customerId);
+  if ((count ?? 0) >= MAX_CUSTOMER_CONTACTS) {
+    return { ok: false, error: `Máximo ${MAX_CUSTOMER_CONTACTS} contactos por cliente.` };
+  }
+  const { error } = await supabase
+    .from("customer_contacts")
+    .insert(clean({ customer_id: customerId, ...input }));
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/clientes/${customerId}`);
+  return { ok: true };
+}
+
+export async function updateCustomerContact(
+  id: string,
+  customerId: string,
+  input: CustomerContactInput,
+): Promise<ActionResult> {
+  if (!input.name?.trim()) return { ok: false, error: "El nombre es obligatorio." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("customer_contacts").update(clean({ ...input })).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/clientes/${customerId}`);
+  return { ok: true };
+}
+
+export async function deleteCustomerContact(
+  id: string,
+  customerId: string,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("customer_contacts").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/clientes/${customerId}`);
   return { ok: true };
 }
 

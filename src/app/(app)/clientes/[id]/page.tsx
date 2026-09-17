@@ -11,7 +11,7 @@ import {
   Wallet,
   CalendarClock,
 } from "lucide-react";
-import { getCustomer, getCustomerActivities, getTeamMembers } from "@/lib/crm/queries";
+import { getCustomer, getCustomerActivities, getTeamMembers, getCustomerContacts } from "@/lib/crm/queries";
 import { getCustomerFiles } from "@/lib/files/queries";
 import { isGoogleConfigured } from "@/lib/google/config";
 import { getGoogleStatus } from "@/lib/google/actions";
@@ -25,6 +25,7 @@ import { AddActivity } from "./AddActivity";
 import { DeleteCustomerButton } from "./DeleteCustomerButton";
 import { ScheduleButton } from "./ScheduleButton";
 import { CustomerFileSection } from "./CustomerFileSection";
+import { CustomerContacts } from "./CustomerContacts";
 
 export default async function ClienteDetallePage({
   params,
@@ -32,12 +33,13 @@ export default async function ClienteDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [customer, activities, teamMembers, googleStatus, files] = await Promise.all([
+  const [customer, activities, teamMembers, googleStatus, files, contacts] = await Promise.all([
     getCustomer(id),
     getCustomerActivities(id),
     getTeamMembers(),
     isGoogleConfigured ? getGoogleStatus() : Promise.resolve({ connected: false, email: null }),
     getCustomerFiles(id),
+    getCustomerContacts(id),
   ]);
 
   if (!customer) notFound();
@@ -172,6 +174,11 @@ export default async function ClienteDetallePage({
             </div>
           </Card>
         </div>
+      </div>
+
+      {/* Personas de contacto (hasta 10) */}
+      <div className="mt-5">
+        <CustomerContacts customerId={customer.id} contacts={contacts} />
       </div>
 
       {/* Archivos del cliente: fotografías, vídeos y planos */}

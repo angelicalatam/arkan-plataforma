@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Customer, CrmStage, Supplier, Activity, SupplierContact } from "./types";
+import type { Customer, CrmStage, Supplier, Activity, SupplierContact, CustomerContact } from "./types";
 
 /** Devuelve las etapas del pipeline ordenadas. */
 export async function getStages(): Promise<CrmStage[]> {
@@ -78,6 +78,17 @@ export async function getSupplierContacts(supplierId: string): Promise<SupplierC
     .eq("supplier_id", supplierId)
     .order("created_at", { ascending: true });
   return (data as SupplierContact[]) ?? [];
+}
+
+/** Personas de contacto de un cliente. */
+export async function getCustomerContacts(customerId: string): Promise<CustomerContact[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("customer_contacts")
+    .select("*")
+    .eq("customer_id", customerId)
+    .order("created_at", { ascending: true });
+  return (data as CustomerContact[]) ?? [];
 }
 
 /** Lista ligera de proveedores para selects. */
