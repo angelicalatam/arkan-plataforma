@@ -1,11 +1,12 @@
 /** Archivos subidos a la ficha de un cliente. */
 
-export type FileCategory = "foto" | "video" | "plano" | "otro";
+export type FileCategory = "foto" | "video" | "plano" | "presupuesto" | "otro";
 
 export type CustomerFile = {
   id: string;
   customer_id: string;
   category: FileCategory;
+  title: string | null;
   name: string | null;
   url: string;
   path: string;

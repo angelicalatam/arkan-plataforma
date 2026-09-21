@@ -11,6 +11,7 @@ export async function addCustomerFile(
   customerId: string,
   input: {
     category: FileCategory;
+    title?: string | null;
     name: string;
     url: string;
     path: string;
@@ -22,6 +23,7 @@ export async function addCustomerFile(
   const { error } = await supabase.from("customer_files").insert({
     customer_id: customerId,
     category: input.category,
+    title: input.title ?? null,
     name: input.name,
     url: input.url,
     path: input.path,

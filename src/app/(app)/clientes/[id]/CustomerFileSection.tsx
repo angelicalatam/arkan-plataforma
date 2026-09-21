@@ -24,6 +24,7 @@ const ICONS: Record<FileCategory, LucideIcon> = {
   foto: Camera,
   video: Video,
   plano: Map,
+  presupuesto: FileText,
   otro: FileText,
 };
 

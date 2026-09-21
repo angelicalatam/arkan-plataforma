@@ -26,6 +26,7 @@ import { DeleteCustomerButton } from "./DeleteCustomerButton";
 import { ScheduleButton } from "./ScheduleButton";
 import { CustomerFileSection } from "./CustomerFileSection";
 import { CustomerContacts } from "./CustomerContacts";
+import { CustomerBudgets } from "./CustomerBudgets";
 
 export default async function ClienteDetallePage({
   params,
@@ -48,6 +49,7 @@ export default async function ClienteDetallePage({
   const fotos = files.filter((f) => f.category === "foto");
   const videos = files.filter((f) => f.category === "video");
   const planos = files.filter((f) => f.category === "plano");
+  const presupuestos = files.filter((f) => f.category === "presupuesto");
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -179,6 +181,11 @@ export default async function ClienteDetallePage({
       {/* Personas de contacto (hasta 10) */}
       <div className="mt-5">
         <CustomerContacts customerId={customer.id} contacts={contacts} />
+      </div>
+
+      {/* Presupuestos enviados (PDF, con versiones) */}
+      <div className="mt-5">
+        <CustomerBudgets customerId={customer.id} files={presupuestos} />
       </div>
 
       {/* Archivos del cliente: fotografías, vídeos y planos */}
