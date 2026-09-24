@@ -39,7 +39,10 @@ export type NavGroup = {
  */
 export const navGroups: NavGroup[] = [
   {
-    items: [{ label: "Panel principal", href: "/dashboard", icon: LayoutDashboard }],
+    items: [
+      { label: "Panel principal", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Tareas", href: "/tareas", icon: SquareCheckBig },
+    ],
   },
   {
     title: "Comercial (CRM)",
@@ -60,7 +63,6 @@ export const navGroups: NavGroup[] = [
       { label: "Órdenes de compra", href: "/ordenes-compra", icon: ClipboardList },
       { label: "Rentabilidad", href: "/rentabilidad", icon: TrendingUp },
       { label: "Materiales", href: "/materiales", icon: Package },
-      { label: "Tareas", href: "/tareas", icon: SquareCheckBig },
       { label: "Incidencias", href: "/incidencias", icon: TriangleAlert },
     ],
   },
