@@ -1,13 +1,18 @@
-import { FolderOpen } from "lucide-react";
-import { ModulePlaceholder } from "@/components/ui/ModulePlaceholder";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { getDocuments } from "@/lib/documents/queries";
+import { getProjectOptions } from "@/lib/projects/queries";
+import { DocumentsLibrary } from "./DocumentsLibrary";
 
-export default function DocumentosPage() {
+export default async function DocumentosPage() {
+  const [documents, projects] = await Promise.all([getDocuments(), getProjectOptions()]);
+
   return (
-    <ModulePlaceholder
-      title="Documentos"
-      description="Biblioteca documental por obra: contratos, planos, fotos, facturas y albaranes."
-      icon={FolderOpen}
-      phase="Fase 9 · Documentación"
-    />
+    <div>
+      <PageHeader
+        title="Documentos"
+        description="Biblioteca documental: contratos, planos, licencias, seguros… por obra o generales."
+      />
+      <DocumentsLibrary documents={documents} projects={projects} />
+    </div>
   );
 }
