@@ -30,17 +30,19 @@ import { followUpState } from "@/lib/rfq/types";
 import { getDueItemReminders } from "@/lib/projects/queries";
 import { getAgendaTasks, getTaskCounts } from "@/lib/tasks/queries";
 import type { Task } from "@/lib/tasks/types";
+import { getOpenIncidentCount } from "@/lib/incidents/queries";
 import { formatDate } from "@/lib/format";
 
 export default async function DashboardPage() {
-  const [followUps, reminders, agenda, taskCounts] = isSupabaseConfigured
+  const [followUps, reminders, agenda, taskCounts, openIncidents] = isSupabaseConfigured
     ? await Promise.all([
         getPendingFollowUps(),
         getDueItemReminders(),
         getAgendaTasks(),
         getTaskCounts(),
+        getOpenIncidentCount(),
       ])
-    : [[], [], [], { open: 0, overdue: 0 }];
+    : [[], [], [], { open: 0, overdue: 0 }, 0];
   const today = new Date().toISOString().slice(0, 10);
 
   const overdueTasks = agenda.filter((t) => t.due_date! < today);
@@ -182,7 +184,7 @@ export default async function DashboardPage() {
         <StatCard label="Tareas pendientes" value={taskCounts.open} icon={SquareCheckBig} tone="ink" />
         <StatCard label="Tareas vencidas" value={taskCounts.overdue} icon={Clock} tone="red" />
         <StatCard label="Compras pendientes" value={0} icon={ShoppingCart} tone="amber" />
-        <StatCard label="Incidencias abiertas" value={0} icon={AlertTriangle} tone="amber" />
+        <StatCard label="Incidencias abiertas" value={openIncidents} icon={AlertTriangle} tone="amber" />
       </Section>
     </div>
   );
