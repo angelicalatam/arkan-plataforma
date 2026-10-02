@@ -24,6 +24,7 @@ export type Employee = {
   birth_date: string | null;
   address: string | null;
   start_date: string | null;
+  emergency_phone: string | null;
   created_at: string;
   updated_at: string;
 };

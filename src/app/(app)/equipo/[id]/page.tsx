@@ -78,8 +78,15 @@ export default async function PersonaDetallePage({
               <Row label="Fecha de nacimiento" value={fmt(employee.birth_date)} />
               <Row label="Incorporación" value={fmt(employee.start_date)} />
               <Row icon={MapPin} label="Dirección" value={employee.address} />
+              <Row icon={Phone} label="Tel. emergencia" value={employee.emergency_phone} />
               <Row label="Coste por hora" value={formatCurrency(employee.hourly_cost)} />
             </dl>
+            {employee.notes && (
+              <div className="border-t border-ink-100 p-4">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-ink-400">Notas</p>
+                <p className="whitespace-pre-wrap text-sm text-ink-700">{employee.notes}</p>
+              </div>
+            )}
           </Card>
 
           <EmployeeWarnings employeeId={employee.id} warnings={warnings} />

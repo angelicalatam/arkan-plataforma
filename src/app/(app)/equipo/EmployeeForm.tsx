@@ -25,6 +25,7 @@ export function EmployeeForm({ employee }: { employee?: Employee }) {
     birth_date: employee?.birth_date ?? "",
     address: employee?.address ?? "",
     start_date: employee?.start_date ?? "",
+    emergency_phone: employee?.emergency_phone ?? "",
   });
   // El coste/hora se guarda como texto para no forzar un "0" delante.
   const [hourly, setHourly] = useState(
@@ -120,6 +121,12 @@ export function EmployeeForm({ employee }: { employee?: Employee }) {
         </Field>
         <Field label="Dirección" full>
           <input className={inputClass} value={form.address ?? ""} onChange={(e) => set("address", e.target.value)} />
+        </Field>
+        <Field label="Teléfono de contacto de emergencia">
+          <input className={inputClass} value={form.emergency_phone ?? ""} onChange={(e) => set("emergency_phone", e.target.value)} placeholder="Ej. 600 00 00 00" />
+        </Field>
+        <Field label="Notas" full>
+          <textarea rows={3} className={inputClass} value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)} placeholder="Observaciones generales de la persona" />
         </Field>
       </FormSection>
 

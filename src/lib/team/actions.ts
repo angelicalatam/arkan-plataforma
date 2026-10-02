@@ -30,6 +30,7 @@ export type EmployeeInput = {
   birth_date?: string | null;
   address?: string | null;
   start_date?: string | null;
+  emergency_phone?: string | null;
 };
 
 export async function createEmployee(input: EmployeeInput): Promise<Result> {
