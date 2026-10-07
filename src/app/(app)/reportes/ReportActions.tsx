@@ -18,8 +18,8 @@ export function ReportActions({
 
   function onExport() {
     const lines = [headers, ...rows].map((r) => r.map(toCsvValue).join(";"));
-    // BOM para que Excel respete los acentos.
-    const csv = "﻿" + lines.join("\r\n");
+    // BOM (acentos) + "sep=;" para que Excel separe en columnas en cualquier equipo.
+    const csv = "﻿" + "sep=;\r\n" + lines.join("\r\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
