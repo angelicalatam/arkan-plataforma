@@ -24,7 +24,19 @@ export function SuppliersTable({ suppliers }: { suppliers: Supplier[] }) {
     return suppliers.filter((s) => {
       if (category !== "todas" && s.category !== category) return false;
       if (!term) return true;
-      return [s.name, s.email, s.phone, s.tax_id, s.city, s.category, s.products_services]
+      return [
+        s.name,
+        s.contact_person,
+        s.email,
+        s.phone,
+        s.whatsapp,
+        s.tax_id,
+        s.city,
+        s.province,
+        s.postal_code,
+        s.category,
+        s.products_services,
+      ]
         .filter(Boolean)
         .some((v) => (v as string).toLowerCase().includes(term));
     });
@@ -55,7 +67,7 @@ export function SuppliersTable({ suppliers }: { suppliers: Supplier[] }) {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar por nombre, categoría, email, CIF/NIF…"
+            placeholder="Buscar por nombre, persona de contacto, ciudad, teléfono, email…"
             className="w-full rounded-lg border border-ink-200 bg-white py-2 pl-9 pr-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
           />
         </div>
@@ -99,6 +111,9 @@ export function SuppliersTable({ suppliers }: { suppliers: Supplier[] }) {
                       <span className="block font-medium text-ink-900 hover:text-brand-700">
                         {s.name}
                       </span>
+                      {s.contact_person && (
+                        <span className="block text-xs text-ink-500">👤 {s.contact_person}</span>
+                      )}
                       {s.email && <span className="block text-xs text-ink-400">{s.email}</span>}
                     </span>
                   </Link>
