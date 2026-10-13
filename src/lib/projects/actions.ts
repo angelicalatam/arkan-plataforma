@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { itemTotals } from "@/lib/quotes/types";
+import { parseQuoteWorkbook } from "@/lib/quotes/import";
 import type { ItemStatus, ProjectStatus } from "./types";
 
 type Result = { ok: true; id?: string } | { ok: false; error: string };
@@ -162,6 +163,113 @@ export async function createProject(input: ProjectInput): Promise<Result> {
   if (error) return { ok: false, error: error.message };
   revalidatePath("/obras");
   return { ok: true, id: data.id };
+}
+
+/**
+ * Importa una obra completa desde un Excel exportado por la app
+ * (capítulos + partidas), igual que la importación de presupuestos.
+ */
+export async function importProjectFromExcel(
+  formData: FormData,
+): Promise<Result & { chapters?: number; items?: number; totalSale?: number }> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "No se recibió ningún archivo." };
+  }
+  const rawTitle = (formData.get("title") as string | null)?.trim();
+  const title = rawTitle || file.name.replace(/\.(xls|xlsx|xlsm)$/i, "");
+  const customer_id = ((formData.get("customer_id") as string | null) || "").trim() || null;
+
+  let parsed;
+  try {
+    const buf = Buffer.from(await file.arrayBuffer());
+    parsed = parseQuoteWorkbook(buf);
+  } catch (e) {
+    return {
+      ok: false,
+      error: "No se pudo leer el Excel: " + (e instanceof Error ? e.message : String(e)),
+    };
+  }
+  if (parsed.chapters.length === 0) {
+    return { ok: false, error: "No se encontraron capítulos ni partidas en el Excel." };
+  }
+
+  const supabase = await createClient();
+
+  const { count } = await supabase.from("projects").select("id", { count: "exact", head: true });
+  const code = `OBRA-${String((count ?? 0) + 1).padStart(4, "0")}`;
+
+  const { data: project, error: pErr } = await supabase
+    .from("projects")
+    .insert(
+      clean({
+        code,
+        name: title,
+        customer_id,
+        status: "preparacion",
+        contract_value: parsed.totalSale,
+        notes: `Importada desde Excel (${file.name}).`,
+      }),
+    )
+    .select("id")
+    .single();
+  if (pErr) return { ok: false, error: pErr.message };
+  const projectId = project.id as string;
+
+  const chapterRows = parsed.chapters.map((c, i) => ({
+    project_id: projectId,
+    name: c.name || `Capítulo ${i + 1}`,
+    code: c.code,
+    position: i,
+  }));
+  const { data: chIns, error: chErr } = await supabase
+    .from("project_chapters")
+    .insert(chapterRows)
+    .select("id, position");
+  if (chErr) {
+    await supabase.from("projects").delete().eq("id", projectId);
+    return { ok: false, error: chErr.message };
+  }
+  const chapterIdByPos = new Map<number, string>();
+  for (const row of chIns ?? []) chapterIdByPos.set(row.position as number, row.id as string);
+
+  const itemRows: Record<string, unknown>[] = [];
+  parsed.chapters.forEach((c, ci) => {
+    const chapterId = chapterIdByPos.get(ci);
+    if (!chapterId) return;
+    c.items.forEach((it, ii) => {
+      itemRows.push({
+        project_id: projectId,
+        chapter_id: chapterId,
+        code: it.code,
+        description: it.description,
+        unit: it.unit,
+        quantity: it.quantity,
+        cost_labor: it.cost_labor,
+        cost_materials: it.cost_materials,
+        cost_other: it.cost_other,
+        margin_pct: it.margin_pct,
+        notes: it.notes,
+        position: ii,
+      });
+    });
+  });
+  if (itemRows.length > 0) {
+    const { error: itErr } = await supabase.from("project_items").insert(itemRows);
+    if (itErr) {
+      await supabase.from("projects").delete().eq("id", projectId);
+      return { ok: false, error: itErr.message };
+    }
+  }
+
+  revalidatePath("/obras");
+  return {
+    ok: true,
+    id: projectId,
+    chapters: parsed.chapters.length,
+    items: itemRows.length,
+    totalSale: parsed.totalSale,
+  };
 }
 
 export async function updateProject(id: string, input: ProjectInput): Promise<Result> {
