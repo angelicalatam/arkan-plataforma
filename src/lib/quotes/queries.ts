@@ -40,12 +40,21 @@ export async function getQuote(id: string): Promise<Quote | null> {
   return quote;
 }
 
-/** Lista ligera de clientes para selects. */
-export async function getCustomerOptions(): Promise<{ id: string; name: string }[]> {
+export type CustomerOption = {
+  id: string;
+  name: string;
+  address: string | null;
+  postal_code: string | null;
+  city: string | null;
+  province: string | null;
+};
+
+/** Lista ligera de clientes para selects (con dirección para autocompletar). */
+export async function getCustomerOptions(): Promise<CustomerOption[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("customers")
-    .select("id, name")
+    .select("id, name, address, postal_code, city, province")
     .order("name", { ascending: true });
-  return data ?? [];
+  return (data as CustomerOption[]) ?? [];
 }

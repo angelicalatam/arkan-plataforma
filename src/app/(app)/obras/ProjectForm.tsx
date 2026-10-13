@@ -7,12 +7,25 @@ import { createProject, updateProject, type ProjectInput } from "@/lib/projects/
 import type { Project } from "@/lib/projects/types";
 import { inputClass, FormSection, Field } from "@/components/ui/Form";
 
+type CustomerOpt = {
+  id: string;
+  name: string;
+  address?: string | null;
+  postal_code?: string | null;
+  city?: string | null;
+  province?: string | null;
+};
+
+function customerAddress(c: CustomerOpt): string {
+  return [c.address, c.postal_code, c.city, c.province].filter(Boolean).join(", ");
+}
+
 export function ProjectForm({
   project,
   customers,
 }: {
   project?: Project;
-  customers: { id: string; name: string }[];
+  customers: CustomerOpt[];
 }) {
   const router = useRouter();
   const editing = Boolean(project);
@@ -32,6 +45,13 @@ export function ProjectForm({
 
   function set<K extends keyof ProjectInput>(key: K, value: ProjectInput[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  // Al elegir cliente, trae su dirección a la dirección de la obra.
+  function onSelectCustomer(id: string) {
+    const c = customers.find((x) => x.id === id);
+    const addr = c ? customerAddress(c) : "";
+    setForm((f) => ({ ...f, customer_id: id, address: addr || f.address }));
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -72,7 +92,7 @@ export function ProjectForm({
           <select
             className={inputClass}
             value={form.customer_id ?? ""}
-            onChange={(e) => set("customer_id", e.target.value)}
+            onChange={(e) => onSelectCustomer(e.target.value)}
           >
             <option value="">— Sin cliente —</option>
             {customers.map((c) => (
@@ -92,7 +112,7 @@ export function ProjectForm({
           />
         </Field>
         <Field label="Dirección de la obra" full>
-          <input className={inputClass} value={form.address ?? ""} onChange={(e) => set("address", e.target.value)} />
+          <input className={inputClass} value={form.address ?? ""} onChange={(e) => set("address", e.target.value)} placeholder="Se rellena con la del cliente; puedes cambiarla" />
         </Field>
         <Field label="Inicio previsto">
           <input type="date" className={inputClass} value={form.start_planned ?? ""} onChange={(e) => set("start_planned", e.target.value)} />
