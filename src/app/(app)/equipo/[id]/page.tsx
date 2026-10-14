@@ -40,9 +40,18 @@ export default async function PersonaDetallePage({
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-4">
-          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-ink-800 text-lg font-semibold text-white">
-            {initials(employee.name)}
-          </span>
+          {employee.photo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={employee.photo_url}
+              alt={employee.name}
+              className="h-14 w-14 shrink-0 rounded-full object-cover ring-1 ring-ink-200"
+            />
+          ) : (
+            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-ink-800 text-lg font-semibold text-white">
+              {initials(employee.name)}
+            </span>
+          )}
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-ink-900">{employee.name}</h1>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
@@ -79,8 +88,26 @@ export default async function PersonaDetallePage({
               <Row label="Incorporación" value={fmt(employee.start_date)} />
               <Row icon={MapPin} label="Dirección" value={employee.address} />
               <Row icon={Phone} label="Tel. emergencia" value={employee.emergency_phone} />
+              <Row label="Nº Seguridad Social" value={employee.social_security} />
+              <Row label="Talla de camisa" value={employee.shirt_size} />
+              <Row label="Talla de pantalón" value={employee.pants_size} />
               <Row label="Coste por hora" value={formatCurrency(employee.hourly_cost)} />
             </dl>
+            {employee.health_card_url && (
+              <div className="border-t border-ink-100 p-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-400">
+                  Tarjeta de salud
+                </p>
+                <a href={employee.health_card_url} target="_blank" rel="noopener noreferrer">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={employee.health_card_url}
+                    alt="Tarjeta de salud"
+                    className="max-h-48 rounded-lg border border-ink-200"
+                  />
+                </a>
+              </div>
+            )}
             {employee.notes && (
               <div className="border-t border-ink-100 p-4">
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-ink-400">Notas</p>

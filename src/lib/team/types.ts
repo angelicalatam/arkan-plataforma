@@ -25,6 +25,11 @@ export type Employee = {
   address: string | null;
   start_date: string | null;
   emergency_phone: string | null;
+  photo_url: string | null;
+  health_card_url: string | null;
+  social_security: string | null;
+  shirt_size: string | null;
+  pants_size: string | null;
   created_at: string;
   updated_at: string;
 };

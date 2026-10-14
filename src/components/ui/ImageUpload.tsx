@@ -9,10 +9,12 @@ type Props = {
   onChange: (url: string | null) => void;
   /** Tamaño del recuadro. */
   size?: number;
+  /** Almacén (bucket) de Supabase donde subir. Por defecto 'productos'. */
+  bucket?: string;
 };
 
-/** Sube una imagen al bucket 'productos' de Supabase y devuelve su URL pública. */
-export function ImageUpload({ value, onChange, size = 96 }: Props) {
+/** Sube una imagen a un bucket público de Supabase y devuelve su URL pública. */
+export function ImageUpload({ value, onChange, size = 96, bucket = "productos" }: Props) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,16 +32,16 @@ export function ImageUpload({ value, onChange, size = 96 }: Props) {
       const ext = file.name.split(".").pop() || "jpg";
       const path = `${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await supabase.storage
-        .from("productos")
+        .from(bucket)
         .upload(path, file, { upsert: true, contentType: file.type });
       if (upErr) throw upErr;
-      const { data } = supabase.storage.from("productos").getPublicUrl(path);
+      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
       onChange(data.publicUrl);
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "No se pudo subir la imagen. ¿Has creado el bucket 'productos'?",
+          : `No se pudo subir la imagen. ¿Has creado el almacén '${bucket}'?`,
       );
     } finally {
       setUploading(false);

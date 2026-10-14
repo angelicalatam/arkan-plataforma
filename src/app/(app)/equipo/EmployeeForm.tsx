@@ -6,6 +6,7 @@ import { Loader2, Save } from "lucide-react";
 import { createEmployee, updateEmployee, type EmployeeInput } from "@/lib/team/actions";
 import { RELATION_TYPES, type Employee, type RelationType } from "@/lib/team/types";
 import { inputClass, FormSection, Field } from "@/components/ui/Form";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 
 export function EmployeeForm({ employee }: { employee?: Employee }) {
   const router = useRouter();
@@ -26,6 +27,11 @@ export function EmployeeForm({ employee }: { employee?: Employee }) {
     address: employee?.address ?? "",
     start_date: employee?.start_date ?? "",
     emergency_phone: employee?.emergency_phone ?? "",
+    social_security: employee?.social_security ?? "",
+    shirt_size: employee?.shirt_size ?? "",
+    pants_size: employee?.pants_size ?? "",
+    photo_url: employee?.photo_url ?? null,
+    health_card_url: employee?.health_card_url ?? null,
   });
   // El coste/hora se guarda como texto para no forzar un "0" delante.
   const [hourly, setHourly] = useState(
@@ -66,6 +72,9 @@ export function EmployeeForm({ employee }: { employee?: Employee }) {
       )}
 
       <FormSection title="Datos de la persona">
+        <Field label="Foto del empleado" full>
+          <ImageUpload value={form.photo_url ?? null} onChange={(url) => set("photo_url", url)} size={96} bucket="empleados" />
+        </Field>
         <Field label="Nombre" required full>
           <input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} />
         </Field>
@@ -124,6 +133,18 @@ export function EmployeeForm({ employee }: { employee?: Employee }) {
         </Field>
         <Field label="Teléfono de contacto de emergencia">
           <input className={inputClass} value={form.emergency_phone ?? ""} onChange={(e) => set("emergency_phone", e.target.value)} placeholder="Ej. 600 00 00 00" />
+        </Field>
+        <Field label="Nº de la Seguridad Social">
+          <input className={inputClass} value={form.social_security ?? ""} onChange={(e) => set("social_security", e.target.value)} />
+        </Field>
+        <Field label="Talla de camisa">
+          <input className={inputClass} value={form.shirt_size ?? ""} onChange={(e) => set("shirt_size", e.target.value)} placeholder="Ej. M, L, 42" />
+        </Field>
+        <Field label="Talla de pantalón">
+          <input className={inputClass} value={form.pants_size ?? ""} onChange={(e) => set("pants_size", e.target.value)} placeholder="Ej. 42, L" />
+        </Field>
+        <Field label="Foto de la tarjeta de salud" full>
+          <ImageUpload value={form.health_card_url ?? null} onChange={(url) => set("health_card_url", url)} size={96} bucket="empleados" />
         </Field>
         <Field label="Notas" full>
           <textarea rows={3} className={inputClass} value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)} placeholder="Observaciones generales de la persona" />
