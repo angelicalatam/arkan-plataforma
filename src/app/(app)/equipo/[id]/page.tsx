@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Pencil, Phone, Mail, MapPin } from "lucide-react";
-import { getEmployee, getEmployeeWarnings, getEmployeeNotes } from "@/lib/team/queries";
+import { getEmployee, getEmployeeWarnings, getEmployeeNotes, getEmployeePhotos } from "@/lib/team/queries";
 import { RELATION_TYPES } from "@/lib/team/types";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -10,6 +10,7 @@ import { formatCurrency, formatDate, initials } from "@/lib/format";
 import { DeleteEmployeeButton } from "./DeleteEmployeeButton";
 import { EmployeeWarnings } from "./EmployeeWarnings";
 import { EmployeeNotes } from "./EmployeeNotes";
+import { EmployeePhotos } from "./EmployeePhotos";
 
 function relLabel(r: string) {
   return RELATION_TYPES.find((x) => x.value === r)?.label ?? r;
@@ -21,12 +22,15 @@ export default async function PersonaDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [employee, warnings, notes] = await Promise.all([
+  const [employee, warnings, notes, photos] = await Promise.all([
     getEmployee(id),
     getEmployeeWarnings(id),
     getEmployeeNotes(id),
+    getEmployeePhotos(id),
   ]);
   if (!employee) notFound();
+
+  const avatarUrl = photos[0]?.url ?? employee.photo_url ?? null;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -40,10 +44,10 @@ export default async function PersonaDetallePage({
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-4">
-          {employee.photo_url ? (
+          {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={employee.photo_url}
+              src={avatarUrl}
               alt={employee.name}
               className="h-14 w-14 shrink-0 rounded-full object-cover ring-1 ring-ink-200"
             />
@@ -120,6 +124,7 @@ export default async function PersonaDetallePage({
         </div>
 
         <div className="space-y-5">
+          <EmployeePhotos employeeId={employee.id} photos={photos} />
           <EmployeeNotes employeeId={employee.id} notes={notes} />
         </div>
       </div>

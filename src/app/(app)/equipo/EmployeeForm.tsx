@@ -72,9 +72,11 @@ export function EmployeeForm({ employee }: { employee?: Employee }) {
       )}
 
       <FormSection title="Datos de la persona">
-        <Field label="Foto del empleado" full>
-          <ImageUpload value={form.photo_url ?? null} onChange={(url) => set("photo_url", url)} size={96} bucket="empleados" />
-        </Field>
+        {editing && (
+          <p className="col-span-full text-xs text-ink-400">
+            📷 Las fotos del empleado se gestionan en su ficha (sección “Fotos del empleado”), donde puedes subir varias.
+          </p>
+        )}
         <Field label="Nombre" required full>
           <input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} />
         </Field>

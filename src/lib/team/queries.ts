@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Employee, EmployeeNote, EmployeeWarning, TimeEntry } from "./types";
+import type { Employee, EmployeeNote, EmployeeWarning, EmployeePhoto, TimeEntry } from "./types";
 
 /** Lista de todo el equipo. */
 export async function getEmployees(): Promise<Employee[]> {
@@ -48,6 +48,17 @@ export async function getEmployeeNotes(employeeId: string): Promise<EmployeeNote
     .eq("employee_id", employeeId)
     .order("created_at", { ascending: false });
   return (data as EmployeeNote[]) ?? [];
+}
+
+/** Fotos de un empleado (galería). */
+export async function getEmployeePhotos(employeeId: string): Promise<EmployeePhoto[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("employee_photos")
+    .select("*")
+    .eq("employee_id", employeeId)
+    .order("created_at", { ascending: true });
+  return (data as EmployeePhoto[]) ?? [];
 }
 
 /** Registros de horas de una obra. */

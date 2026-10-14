@@ -126,6 +126,40 @@ export async function deleteEmployeeNote(id: string, employeeId: string): Promis
 }
 
 // ---------------------------------------------------------------
+// FOTOS DEL EMPLEADO (galería)
+// ---------------------------------------------------------------
+export async function addEmployeePhoto(
+  employeeId: string,
+  input: { name: string; url: string; path: string; mime_type?: string | null; size?: number | null },
+): Promise<Result> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("employee_photos").insert({
+    employee_id: employeeId,
+    name: input.name,
+    url: input.url,
+    path: input.path,
+    mime_type: input.mime_type ?? null,
+    size: input.size ?? null,
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/equipo/${employeeId}`);
+  return { ok: true };
+}
+
+export async function deleteEmployeePhoto(
+  id: string,
+  employeeId: string,
+  path: string,
+): Promise<Result> {
+  const supabase = await createClient();
+  if (path) await supabase.storage.from("empleados").remove([path]);
+  const { error } = await supabase.from("employee_photos").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/equipo/${employeeId}`);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------
 // HORAS
 // ---------------------------------------------------------------
 export type TimeEntryInput = {

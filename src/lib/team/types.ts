@@ -68,6 +68,19 @@ export type EmployeeNote = {
   updated_at: string;
 };
 
+export type EmployeePhoto = {
+  id: string;
+  employee_id: string;
+  name: string | null;
+  url: string;
+  path: string;
+  mime_type: string | null;
+  size: number | null;
+  created_at: string;
+};
+
+export const EMPLOYEE_BUCKET = "empleados";
+
 export type TimeEntry = {
   id: string;
   employee_id: string | null;
