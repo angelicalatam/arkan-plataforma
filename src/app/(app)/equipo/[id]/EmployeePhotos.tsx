@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Upload, Loader2, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { addEmployeePhoto, deleteEmployeePhoto } from "@/lib/team/actions";
-import { EMPLOYEE_BUCKET, type EmployeePhoto } from "@/lib/team/types";
+import { EMPLOYEE_BUCKET, type EmployeePhoto, type PhotoKind } from "@/lib/team/types";
 import { Card, CardHeader } from "@/components/ui/Card";
 
 const MAX_MB = 10;
@@ -13,9 +13,13 @@ const MAX_MB = 10;
 export function EmployeePhotos({
   employeeId,
   photos,
+  kind = "foto",
+  title = "Fotos del empleado",
 }: {
   employeeId: string;
   photos: EmployeePhoto[];
+  kind?: PhotoKind;
+  title?: string;
 }) {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
@@ -34,13 +38,14 @@ export function EmployeePhotos({
           continue;
         }
         const ext = file.name.split(".").pop() || "jpg";
-        const path = `${employeeId}/fotos/${crypto.randomUUID()}.${ext}`;
+        const path = `${employeeId}/${kind}/${crypto.randomUUID()}.${ext}`;
         const { error: upErr } = await supabase.storage
           .from(EMPLOYEE_BUCKET)
           .upload(path, file, { contentType: file.type, upsert: true });
         if (upErr) throw upErr;
         const { data } = supabase.storage.from(EMPLOYEE_BUCKET).getPublicUrl(path);
         const res = await addEmployeePhoto(employeeId, {
+          kind,
           name: file.name,
           url: data.publicUrl,
           path,
@@ -71,7 +76,7 @@ export function EmployeePhotos({
   return (
     <Card>
       <CardHeader
-        title={`Fotos del empleado (${photos.length})`}
+        title={`${title} (${photos.length})`}
         action={
           <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700">
             {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}

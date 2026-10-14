@@ -6,7 +6,6 @@ import { Loader2, Save } from "lucide-react";
 import { createEmployee, updateEmployee, type EmployeeInput } from "@/lib/team/actions";
 import { RELATION_TYPES, type Employee, type RelationType } from "@/lib/team/types";
 import { inputClass, FormSection, Field } from "@/components/ui/Form";
-import { ImageUpload } from "@/components/ui/ImageUpload";
 
 export function EmployeeForm({ employee }: { employee?: Employee }) {
   const router = useRouter();
@@ -145,9 +144,11 @@ export function EmployeeForm({ employee }: { employee?: Employee }) {
         <Field label="Talla de pantalón">
           <input className={inputClass} value={form.pants_size ?? ""} onChange={(e) => set("pants_size", e.target.value)} placeholder="Ej. 42, L" />
         </Field>
-        <Field label="Foto de la tarjeta de salud" full>
-          <ImageUpload value={form.health_card_url ?? null} onChange={(url) => set("health_card_url", url)} size={96} bucket="empleados" />
-        </Field>
+        {editing && (
+          <p className="col-span-full text-xs text-ink-400">
+            🏥 Las fotos de la tarjeta de salud se gestionan en la ficha (sección “Tarjeta de salud”), donde puedes subir varias.
+          </p>
+        )}
         <Field label="Notas" full>
           <textarea rows={3} className={inputClass} value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)} placeholder="Observaciones generales de la persona" />
         </Field>

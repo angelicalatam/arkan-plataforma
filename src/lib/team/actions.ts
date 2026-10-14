@@ -130,11 +130,19 @@ export async function deleteEmployeeNote(id: string, employeeId: string): Promis
 // ---------------------------------------------------------------
 export async function addEmployeePhoto(
   employeeId: string,
-  input: { name: string; url: string; path: string; mime_type?: string | null; size?: number | null },
+  input: {
+    kind?: "foto" | "tarjeta_salud";
+    name: string;
+    url: string;
+    path: string;
+    mime_type?: string | null;
+    size?: number | null;
+  },
 ): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.from("employee_photos").insert({
     employee_id: employeeId,
+    kind: input.kind ?? "foto",
     name: input.name,
     url: input.url,
     path: input.path,

@@ -68,9 +68,12 @@ export type EmployeeNote = {
   updated_at: string;
 };
 
+export type PhotoKind = "foto" | "tarjeta_salud";
+
 export type EmployeePhoto = {
   id: string;
   employee_id: string;
+  kind: PhotoKind;
   name: string | null;
   url: string;
   path: string;

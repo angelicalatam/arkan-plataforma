@@ -30,7 +30,9 @@ export default async function PersonaDetallePage({
   ]);
   if (!employee) notFound();
 
-  const avatarUrl = photos[0]?.url ?? employee.photo_url ?? null;
+  const fotos = photos.filter((p) => p.kind !== "tarjeta_salud");
+  const healthCards = photos.filter((p) => p.kind === "tarjeta_salud");
+  const avatarUrl = fotos[0]?.url ?? employee.photo_url ?? null;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -97,21 +99,6 @@ export default async function PersonaDetallePage({
               <Row label="Talla de pantalón" value={employee.pants_size} />
               <Row label="Coste por hora" value={formatCurrency(employee.hourly_cost)} />
             </dl>
-            {employee.health_card_url && (
-              <div className="border-t border-ink-100 p-4">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-400">
-                  Tarjeta de salud
-                </p>
-                <a href={employee.health_card_url} target="_blank" rel="noopener noreferrer">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={employee.health_card_url}
-                    alt="Tarjeta de salud"
-                    className="max-h-48 rounded-lg border border-ink-200"
-                  />
-                </a>
-              </div>
-            )}
             {employee.notes && (
               <div className="border-t border-ink-100 p-4">
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-ink-400">Notas</p>
@@ -124,7 +111,8 @@ export default async function PersonaDetallePage({
         </div>
 
         <div className="space-y-5">
-          <EmployeePhotos employeeId={employee.id} photos={photos} />
+          <EmployeePhotos employeeId={employee.id} photos={fotos} kind="foto" title="Fotos del empleado" />
+          <EmployeePhotos employeeId={employee.id} photos={healthCards} kind="tarjeta_salud" title="Tarjeta de salud" />
           <EmployeeNotes employeeId={employee.id} notes={notes} />
         </div>
       </div>
