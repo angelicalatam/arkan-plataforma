@@ -35,6 +35,8 @@ export function TasksClient({
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("pendientes");
   const [term, setTerm] = useState("");
+  const [assigneeFilter, setAssigneeFilter] = useState("");
+  const [projectFilter, setProjectFilter] = useState("");
 
   // Alta rápida.
   const [title, setTitle] = useState("");
@@ -63,6 +65,20 @@ export function TasksClient({
     const q = term.trim().toLowerCase();
     return tasks.filter((t) => {
       if (q && !t.title.toLowerCase().includes(q)) return false;
+      if (assigneeFilter) {
+        if (assigneeFilter === "sin") {
+          if (t.assignee_id) return false;
+        } else if (t.assignee_id !== assigneeFilter) {
+          return false;
+        }
+      }
+      if (projectFilter) {
+        if (projectFilter === "sin") {
+          if (t.project_id) return false;
+        } else if (t.project_id !== projectFilter) {
+          return false;
+        }
+      }
       switch (filter) {
         case "pendientes":
           return isOpen(t.status);
@@ -76,7 +92,7 @@ export function TasksClient({
           return true;
       }
     });
-  }, [tasks, filter, term, today]);
+  }, [tasks, filter, term, today, assigneeFilter, projectFilter]);
 
   async function onQuickAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -187,14 +203,45 @@ export function TasksClient({
             </button>
           ))}
         </div>
-        <div className="relative sm:w-64">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
-          <input
-            className={`${inputClass} pl-8`}
-            value={term}
-            onChange={(e) => setTerm(e.target.value)}
-            placeholder="Buscar tarea…"
-          />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <select
+            className={`${inputClass} sm:w-44`}
+            value={assigneeFilter}
+            onChange={(e) => setAssigneeFilter(e.target.value)}
+            title="Filtrar por encargado"
+          >
+            <option value="">Todos los encargados</option>
+            <option value="sin">Sin asignar</option>
+            {employees.map((em) => (
+              <option key={em.id} value={em.id}>
+                {em.name}
+              </option>
+            ))}
+          </select>
+          <select
+            className={`${inputClass} sm:w-44`}
+            value={projectFilter}
+            onChange={(e) => setProjectFilter(e.target.value)}
+            title="Filtrar por obra"
+          >
+            <option value="">Todas las obras</option>
+            <option value="sin">Sin obra</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.code ? `${p.code} · ` : ""}
+                {p.name || "Obra"}
+              </option>
+            ))}
+          </select>
+          <div className="relative sm:w-64">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+            <input
+              className={`${inputClass} pl-8`}
+              value={term}
+              onChange={(e) => setTerm(e.target.value)}
+              placeholder="Buscar tarea…"
+            />
+          </div>
         </div>
       </div>
 
