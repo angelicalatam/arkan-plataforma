@@ -66,7 +66,7 @@ export async function getProjectTimeEntries(projectId: string): Promise<TimeEntr
   const supabase = await createClient();
   const { data } = await supabase
     .from("time_entries")
-    .select("*, employee:employees(id, name), item:project_items(id, description)")
+    .select("*, employee:employees(id, name), supplier:suppliers(id, name), item:project_items(id, description)")
     .eq("project_id", projectId)
     .order("work_date", { ascending: false });
   return (data as TimeEntry[]) ?? [];

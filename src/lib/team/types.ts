@@ -87,6 +87,7 @@ export const EMPLOYEE_BUCKET = "empleados";
 export type TimeEntry = {
   id: string;
   employee_id: string | null;
+  supplier_id: string | null;
   project_id: string;
   project_item_id: string | null;
   work_date: string;
@@ -95,6 +96,7 @@ export type TimeEntry = {
   notes: string | null;
   created_at: string;
   employee?: { id: string; name: string } | null;
+  supplier?: { id: string; name: string } | null;
   item?: { id: string; description: string } | null;
 };
 

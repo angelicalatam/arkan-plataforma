@@ -287,6 +287,7 @@ export default async function ObraDetallePage({
           projectId={project.id}
           entries={timeEntries}
           employees={employeeOptions}
+          suppliers={supplierOptions}
           items={itemOptions}
         />
       </div>

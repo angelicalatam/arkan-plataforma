@@ -172,6 +172,7 @@ export async function deleteEmployeePhoto(
 // ---------------------------------------------------------------
 export type TimeEntryInput = {
   employee_id?: string | null;
+  supplier_id?: string | null;
   project_item_id?: string | null;
   work_date?: string | null;
   hours?: number;
@@ -188,6 +189,7 @@ export async function addTimeEntry(
     clean({
       project_id: projectId,
       employee_id: input.employee_id || null,
+      supplier_id: input.supplier_id || null,
       project_item_id: input.project_item_id || null,
       work_date: input.work_date || new Date().toISOString().slice(0, 10),
       hours: input.hours ?? 0,
@@ -195,6 +197,29 @@ export async function addTimeEntry(
       notes: input.notes ?? null,
     }),
   );
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/obras/${projectId}`);
+  return { ok: true };
+}
+
+export async function updateTimeEntry(
+  id: string,
+  projectId: string,
+  input: TimeEntryInput,
+): Promise<Result> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("time_entries")
+    .update({
+      employee_id: input.employee_id || null,
+      supplier_id: input.supplier_id || null,
+      project_item_id: input.project_item_id || null,
+      work_date: input.work_date || new Date().toISOString().slice(0, 10),
+      hours: input.hours ?? 0,
+      hourly_cost: input.hourly_cost ?? 0,
+      notes: input.notes ?? null,
+    })
+    .eq("id", id);
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/obras/${projectId}`);
   return { ok: true };
