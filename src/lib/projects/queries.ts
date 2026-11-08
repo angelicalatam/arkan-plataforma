@@ -13,6 +13,19 @@ export async function getProjects(): Promise<Project[]> {
   return (data as Project[]) ?? [];
 }
 
+/** Obras registradas a nombre de un cliente concreto. */
+export async function getProjectsByCustomer(customerId: string): Promise<Project[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("projects")
+    .select(
+      "*, customer:customers(id, name), chapters:project_chapters(items:project_items(quantity,cost_labor,cost_materials,cost_other,margin_pct,pct_done))",
+    )
+    .eq("customer_id", customerId)
+    .order("created_at", { ascending: false });
+  return (data as Project[]) ?? [];
+}
+
 /** Lista ligera de obras para selects. */
 export async function getProjectOptions(): Promise<{ id: string; name: string; code: string | null }[]> {
   const supabase = await createClient();

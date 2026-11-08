@@ -52,6 +52,16 @@ export function PurchaseForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Cantidad y precio se guardan como texto para no forzar un "0" delante
+  // y poder escribir decimales con comodidad.
+  const [qty, setQty] = useState(purchase?.quantity != null ? String(purchase.quantity) : "1");
+  const [price, setPrice] = useState(
+    purchase?.unit_price != null && purchase.unit_price !== 0 ? String(purchase.unit_price) : "",
+  );
+
+  const PRICE_MIN = 1;
+  const PRICE_MAX = 500000;
+
   function set<K extends keyof PurchaseInput>(key: K, value: PurchaseInput[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
@@ -73,8 +83,8 @@ export function PurchaseForm({
   }, [form.project_id]);
 
   const totals = purchaseTotals({
-    quantity: Number(form.quantity) || 0,
-    unit_price: Number(form.unit_price) || 0,
+    quantity: Number(qty) || 0,
+    unit_price: Number(price) || 0,
     tax_rate: Number(form.tax_rate) || 0,
   });
 
@@ -84,12 +94,17 @@ export function PurchaseForm({
       setError("El material es obligatorio.");
       return;
     }
+    const priceNum = Number(price) || 0;
+    if (priceNum < PRICE_MIN || priceNum > PRICE_MAX) {
+      setError(`El precio unitario debe estar entre ${PRICE_MIN} € y ${PRICE_MAX.toLocaleString("es-ES")} €.`);
+      return;
+    }
     setLoading(true);
     setError(null);
     const payload: PurchaseInput = {
       ...form,
-      quantity: Number(form.quantity) || 0,
-      unit_price: Number(form.unit_price) || 0,
+      quantity: Number(qty) || 0,
+      unit_price: priceNum,
       tax_rate: Number(form.tax_rate) || 0,
     };
     const res = editing
@@ -175,13 +190,32 @@ export function PurchaseForm({
 
       <FormSection title="Cantidad y precio">
         <Field label="Cantidad">
-          <input type="number" step="0.001" className={inputClass} value={form.quantity ?? 0} onChange={(e) => set("quantity", Number(e.target.value))} />
+          <input
+            type="number"
+            step="0.001"
+            min="0"
+            inputMode="decimal"
+            className={inputClass}
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            placeholder="0"
+          />
         </Field>
         <Field label="Unidad">
           <input className={inputClass} value={form.unit ?? ""} onChange={(e) => set("unit", e.target.value)} />
         </Field>
         <Field label="Precio unitario (€)">
-          <input type="number" step="0.01" className={inputClass} value={form.unit_price ?? 0} onChange={(e) => set("unit_price", Number(e.target.value))} />
+          <input
+            type="number"
+            step="0.01"
+            min={PRICE_MIN}
+            max={PRICE_MAX}
+            inputMode="decimal"
+            className={inputClass}
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            placeholder="Entre 1 € y 500.000 €"
+          />
         </Field>
         <Field label="IVA (%)">
           <input type="number" step="0.01" className={inputClass} value={form.tax_rate ?? 21} onChange={(e) => set("tax_rate", Number(e.target.value))} />

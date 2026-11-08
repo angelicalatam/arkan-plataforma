@@ -26,9 +26,10 @@ export function ProjectLabor({
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const [employeeId, setEmployeeId] = useState("");
-  const [hourlyCost, setHourlyCost] = useState(0);
+  // Horas y coste/hora se guardan como texto para no forzar un "0" delante.
+  const [hourlyCost, setHourlyCost] = useState("");
   const [workDate, setWorkDate] = useState(new Date().toISOString().slice(0, 10));
-  const [hours, setHours] = useState(0);
+  const [hours, setHours] = useState("");
   const [itemId, setItemId] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,7 +41,7 @@ export function ProjectLabor({
   function onSelectEmployee(id: string) {
     setEmployeeId(id);
     const emp = employees.find((e) => e.id === id);
-    if (emp) setHourlyCost(emp.hourly_cost);
+    if (emp) setHourlyCost(emp.hourly_cost ? String(emp.hourly_cost) : "");
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -65,8 +66,8 @@ export function ProjectLabor({
       return;
     }
     setEmployeeId("");
-    setHourlyCost(0);
-    setHours(0);
+    setHourlyCost("");
+    setHours("");
     setItemId("");
     setNotes("");
     setAdding(false);
@@ -144,11 +145,11 @@ export function ProjectLabor({
             </label>
             <label>
               <span className="mb-1 block text-[11px] font-medium text-ink-500">Horas</span>
-              <input type="number" step="0.25" className={`${inputClass} text-right`} value={hours} onChange={(e) => setHours(Number(e.target.value))} />
+              <input type="number" step="0.25" min="0" inputMode="decimal" className={`${inputClass} text-right`} value={hours} onChange={(e) => setHours(e.target.value)} placeholder="0" />
             </label>
             <label>
               <span className="mb-1 block text-[11px] font-medium text-ink-500">Coste/hora (€)</span>
-              <input type="number" step="0.01" className={`${inputClass} text-right`} value={hourlyCost} onChange={(e) => setHourlyCost(Number(e.target.value))} />
+              <input type="number" step="0.01" min="0" inputMode="decimal" className={`${inputClass} text-right`} value={hourlyCost} onChange={(e) => setHourlyCost(e.target.value)} placeholder="0,00" />
             </label>
             <label>
               <span className="mb-1 block text-[11px] font-medium text-ink-500">Nota (opcional)</span>

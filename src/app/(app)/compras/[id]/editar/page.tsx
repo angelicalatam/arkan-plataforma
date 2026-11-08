@@ -4,9 +4,11 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { getPurchase } from "@/lib/purchases/queries";
+import { getPurchaseFiles } from "@/lib/purchase-files/queries";
 import { getSupplierOptions } from "@/lib/crm/queries";
 import { getProjectOptions } from "@/lib/projects/queries";
 import { PurchaseForm } from "../../PurchaseForm";
+import { PurchaseFiles } from "../PurchaseFiles";
 import { DeletePurchaseButton } from "../DeletePurchaseButton";
 
 export default async function EditarCompraPage({
@@ -15,12 +17,16 @@ export default async function EditarCompraPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [purchase, suppliers, projects] = await Promise.all([
+  const [purchase, suppliers, projects, files] = await Promise.all([
     getPurchase(id),
     getSupplierOptions(),
     getProjectOptions(),
+    getPurchaseFiles(id),
   ]);
   if (!purchase) notFound();
+
+  const ordenes = files.filter((f) => f.kind !== "comprobante_pago");
+  const comprobantes = files.filter((f) => f.kind === "comprobante_pago");
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -36,6 +42,23 @@ export default async function EditarCompraPage({
         <DeletePurchaseButton id={purchase.id} code={purchase.code ?? "compra"} projectId={purchase.project_id} />
       </div>
       <PurchaseForm suppliers={suppliers} projects={projects} purchase={purchase} />
+
+      <div className="mt-6 space-y-5">
+        <PurchaseFiles
+          purchaseId={purchase.id}
+          files={ordenes}
+          kind="orden_compra"
+          title="Orden de compra"
+          emptyHint="Sin orden de compra adjunta. Sube el PDF u otro archivo (máx. 50 MB)."
+        />
+        <PurchaseFiles
+          purchaseId={purchase.id}
+          files={comprobantes}
+          kind="comprobante_pago"
+          title="Comprobante de pago"
+          emptyHint="Sin comprobante de pago adjunto. Sube el justificante (máx. 50 MB)."
+        />
+      </div>
     </div>
   );
 }

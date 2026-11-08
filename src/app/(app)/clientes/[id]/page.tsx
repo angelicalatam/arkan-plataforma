@@ -10,8 +10,12 @@ import {
   MapPin,
   Wallet,
   CalendarClock,
+  HardHat,
+  ChevronRight,
 } from "lucide-react";
 import { getCustomer, getCustomerActivities, getTeamMembers, getCustomerContacts } from "@/lib/crm/queries";
+import { getProjectsByCustomer } from "@/lib/projects/queries";
+import { projectStatusInfo } from "@/lib/projects/types";
 import { getCustomerFiles } from "@/lib/files/queries";
 import { isGoogleConfigured } from "@/lib/google/config";
 import { getGoogleStatus } from "@/lib/google/actions";
@@ -34,13 +38,14 @@ export default async function ClienteDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [customer, activities, teamMembers, googleStatus, files, contacts] = await Promise.all([
+  const [customer, activities, teamMembers, googleStatus, files, contacts, projects] = await Promise.all([
     getCustomer(id),
     getCustomerActivities(id),
     getTeamMembers(),
     isGoogleConfigured ? getGoogleStatus() : Promise.resolve({ connected: false, email: null }),
     getCustomerFiles(id),
     getCustomerContacts(id),
+    getProjectsByCustomer(id),
   ]);
 
   if (!customer) notFound();
@@ -79,6 +84,13 @@ export default async function ClienteDetallePage({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <a
+            href="#obras-cliente"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50"
+          >
+            <HardHat className="h-4 w-4" />
+            Obras ({projects.length})
+          </a>
           <ScheduleButton
             customer={{
               id: customer.id,
@@ -118,6 +130,58 @@ export default async function ClienteDetallePage({
           icon={CalendarClock}
           tone="blue"
         />
+      </div>
+
+      {/* Obras de este cliente */}
+      <div id="obras-cliente" className="mb-6 scroll-mt-20">
+        <Card>
+          <CardHeader
+            title={`Obras de este cliente (${projects.length})`}
+            action={
+              <Link
+                href={"/obras" as Route}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
+              >
+                Ir a Obras
+              </Link>
+            }
+          />
+          {projects.length === 0 ? (
+            <p className="px-6 py-8 text-center text-sm text-ink-400">
+              Este cliente todavía no tiene obras registradas.
+            </p>
+          ) : (
+            <ul className="divide-y divide-ink-100">
+              {projects.map((p) => {
+                const st = projectStatusInfo(p.status);
+                return (
+                  <li key={p.id}>
+                    <Link
+                      href={`/obras/${p.id}` as Route}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-ink-50"
+                    >
+                      <HardHat className="h-5 w-5 shrink-0 text-ink-400" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-ink-900">
+                          {p.code ? `${p.code} · ` : ""}
+                          {p.name || "Obra"}
+                        </p>
+                        {p.address && (
+                          <p className="truncate text-xs text-ink-400">{p.address}</p>
+                        )}
+                      </div>
+                      <span className="hidden shrink-0 text-sm text-ink-600 sm:block">
+                        {formatCurrency(p.contract_value)}
+                      </span>
+                      <Badge tone={st.tone}>{st.label}</Badge>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-ink-300" />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
