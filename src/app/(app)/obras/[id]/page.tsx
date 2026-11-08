@@ -30,6 +30,7 @@ import { getSupplierOptions } from "@/lib/crm/queries";
 import { ProjectLabor } from "./ProjectLabor";
 import { ProjectSchedule } from "./ProjectSchedule";
 import { MaterialNeeds } from "./MaterialNeeds";
+import { MaterialBudgetVsActual } from "./MaterialBudgetVsActual";
 import {
   projectStatusInfo,
   projectEconomics,
@@ -363,6 +364,11 @@ export default async function ObraDetallePage({
             </div>
           )}
         </Card>
+      </div>
+
+      {/* Comparativa de materiales: presupuestado vs comprado */}
+      <div className="mt-5">
+        <MaterialBudgetVsActual projectId={project.id} items={allItems} purchases={purchases} />
       </div>
 
       {/* Seguimiento directo con el cliente */}

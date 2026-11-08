@@ -247,6 +247,7 @@ export async function importProjectFromExcel(
         quantity: it.quantity,
         cost_labor: it.cost_labor,
         cost_materials: it.cost_materials,
+        cost_products: it.cost_products,
         cost_other: it.cost_other,
         margin_pct: it.margin_pct,
         notes: it.notes,
@@ -260,6 +261,28 @@ export async function importProjectFromExcel(
       await supabase.from("projects").delete().eq("id", projectId);
       return { ok: false, error: itErr.message };
     }
+  }
+
+  // Los productos del Excel pasan a "Materiales necesarios" de la obra.
+  const requestRows: Record<string, unknown>[] = [];
+  for (const c of parsed.chapters) {
+    for (const it of c.items) {
+      // Solo las partidas que tienen producto; el material se nombra con la partida.
+      if (!it.products || it.products.length === 0) continue;
+      const nm = (it.description ?? "").trim();
+      if (!nm) continue;
+      requestRows.push({
+        project_id: projectId,
+        name: nm,
+        quantity: it.quantity || 1,
+        unit: it.unit || "ud",
+        status: "por_pedir",
+        notes: null,
+      });
+    }
+  }
+  if (requestRows.length > 0) {
+    await supabase.from("material_requests").insert(requestRows);
   }
 
   revalidatePath("/obras");
@@ -411,4 +434,76 @@ export async function deleteProjectClientNote(id: string, projectId: string): Pr
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/obras/${projectId}`);
   return { ok: true };
+}
+
+/**
+ * Actualiza los COSTES de las partidas de una obra ya existente leyendo
+ * de nuevo su Excel (empareja por código de partida). No borra partidas
+ * ni toca las compras/horas enlazadas: solo refresca mano de obra,
+ * materiales, coste de producto, otros y margen. Útil para obras
+ * importadas antes de guardar el coste de producto por separado.
+ */
+export async function updateProjectCostsFromExcel(
+  projectId: string,
+  formData: FormData,
+): Promise<Result & { updated?: number; unmatched?: number }> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "No se recibió ningún archivo." };
+  }
+
+  let parsed;
+  try {
+    const buf = Buffer.from(await file.arrayBuffer());
+    parsed = parseQuoteWorkbook(buf);
+  } catch (e) {
+    return {
+      ok: false,
+      error: "No se pudo leer el Excel: " + (e instanceof Error ? e.message : String(e)),
+    };
+  }
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("project_items")
+    .select("id, code")
+    .eq("project_id", projectId);
+  if (!existing || existing.length === 0) {
+    return { ok: false, error: "Esta obra no tiene partidas que actualizar." };
+  }
+
+  // Índice de partidas por código (las que tienen código).
+  const idByCode = new Map<string, string>();
+  for (const row of existing) {
+    const code = (row as { code: string | null }).code;
+    if (code) idByCode.set(String(code).trim(), (row as { id: string }).id);
+  }
+
+  let updated = 0;
+  let unmatched = 0;
+  for (const chapter of parsed.chapters) {
+    for (const it of chapter.items) {
+      const code = it.code ? String(it.code).trim() : "";
+      const itemId = code ? idByCode.get(code) : undefined;
+      if (!itemId) {
+        unmatched++;
+        continue;
+      }
+      const { error } = await supabase
+        .from("project_items")
+        .update({
+          cost_labor: it.cost_labor,
+          cost_materials: it.cost_materials,
+          cost_products: it.cost_products,
+          cost_other: it.cost_other,
+          margin_pct: it.margin_pct,
+        })
+        .eq("id", itemId);
+      if (error) return { ok: false, error: error.message };
+      updated++;
+    }
+  }
+
+  revalidatePath(`/obras/${projectId}`);
+  return { ok: true, updated, unmatched };
 }

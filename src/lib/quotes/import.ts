@@ -32,7 +32,8 @@ export type ParsedItem = {
   unit: string;
   quantity: number;
   cost_labor: number;
-  cost_materials: number;
+  cost_materials: number; // incluye el coste de los productos (para los totales)
+  cost_products: number; // solo el coste de los productos de la partida (para comparar)
   cost_other: number;
   margin_pct: number;
   notes: string | null;
@@ -106,6 +107,7 @@ function finalizeItem(w: WorkItem): ParsedItem {
     quantity: w.quantity,
     cost_labor: labor,
     cost_materials: materials,
+    cost_products: round2(w.productMaterials),
     cost_other,
     margin_pct,
     notes: w.notes,

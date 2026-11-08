@@ -105,6 +105,7 @@ export type ProjectItem = {
   quantity: number;
   cost_labor: number;
   cost_materials: number;
+  cost_products: number;
   cost_other: number;
   margin_pct: number;
   est_hours: number | null;

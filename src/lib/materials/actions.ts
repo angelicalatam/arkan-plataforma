@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { parseQuoteWorkbook } from "@/lib/quotes/import";
 import type { RequestStatus } from "./types";
 
 type Result = { ok: true; id?: string } | { ok: false; error: string };
@@ -140,4 +141,72 @@ export async function deleteMaterialRequest(id: string, projectId: string): Prom
   if (error) return { ok: false, error: error.message };
   revalidateReq(projectId);
   return { ok: true };
+}
+
+/**
+ * Trae a "Materiales necesarios" todos los productos del Excel importado
+ * (azulejo, mampara, sanitario…). Empareja por nombre para no duplicar:
+ * añade solo los productos que no estén ya en la lista de la obra.
+ */
+export async function importProductsFromExcel(
+  projectId: string,
+  formData: FormData,
+): Promise<Result & { added?: number; skipped?: number }> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "No se recibió ningún archivo." };
+  }
+  let parsed;
+  try {
+    const buf = Buffer.from(await file.arrayBuffer());
+    parsed = parseQuoteWorkbook(buf);
+  } catch (e) {
+    return {
+      ok: false,
+      error: "No se pudo leer el Excel: " + (e instanceof Error ? e.message : String(e)),
+    };
+  }
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("material_requests")
+    .select("name")
+    .eq("project_id", projectId);
+  const have = new Set(
+    (existing ?? []).map((r) => String((r as { name: string | null }).name ?? "").trim().toLowerCase()),
+  );
+
+  const rows: Record<string, unknown>[] = [];
+  let skipped = 0;
+  for (const ch of parsed.chapters) {
+    for (const it of ch.items) {
+      // Solo las partidas que tienen producto en el Excel.
+      if (!it.products || it.products.length === 0) continue;
+      // El material se nombra con la PARTIDA (ej. "Instalación de mampara").
+      const nm = (it.description ?? "").trim();
+      if (!nm) continue;
+      const key = nm.toLowerCase();
+      if (have.has(key)) {
+        skipped++;
+        continue;
+      }
+      have.add(key);
+      rows.push({
+        project_id: projectId,
+        name: nm,
+        quantity: it.quantity || 1,
+        unit: it.unit || "ud",
+        status: "por_pedir",
+        notes: null,
+      });
+    }
+  }
+
+  if (rows.length > 0) {
+    const { error } = await supabase.from("material_requests").insert(rows);
+    if (error) return { ok: false, error: error.message };
+  }
+  revalidatePath("/materiales");
+  revalidatePath(`/obras/${projectId}`);
+  return { ok: true, added: rows.length, skipped };
 }

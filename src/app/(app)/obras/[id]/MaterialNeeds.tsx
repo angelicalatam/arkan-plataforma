@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Loader2, X, Trash2, Package } from "lucide-react";
-import { addMaterialRequest, setRequestStatus, deleteMaterialRequest } from "@/lib/materials/actions";
+import { Plus, Loader2, X, Trash2, Package, FileUp } from "lucide-react";
+import { addMaterialRequest, setRequestStatus, deleteMaterialRequest, importProductsFromExcel } from "@/lib/materials/actions";
 import { REQUEST_STATUSES, requestStatusInfo, type MaterialRequest, type RequestStatus } from "@/lib/materials/types";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -33,6 +33,30 @@ export function MaterialNeeds({
   const [status, setStatus] = useState<RequestStatus>("por_pedir");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+
+  async function onImportProducts(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportMsg(null);
+    setError(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await importProductsFromExcel(projectId, fd);
+    setImporting(false);
+    e.target.value = "";
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    setImportMsg(
+      `Productos añadidos: ${res.added ?? 0}` +
+        (res.skipped ? ` · ${res.skipped} ya estaban en la lista` : ""),
+    );
+    router.refresh();
+  }
 
   function onPickMaterial(id: string) {
     setMaterialId(id);
@@ -92,16 +116,24 @@ export function MaterialNeeds({
       <CardHeader
         title="Materiales necesarios"
         action={
-          !adding ? (
-            <button
-              onClick={() => setAdding(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700"
-            >
-              <Plus className="h-4 w-4" /> Añadir material
-            </button>
-          ) : undefined
+          <div className="flex items-center gap-2">
+            <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50">
+              {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
+              Traer productos del Excel
+              <input type="file" accept=".xls,.xlsx,.xlsm" className="hidden" onChange={onImportProducts} disabled={importing} />
+            </label>
+            {!adding && (
+              <button
+                onClick={() => setAdding(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700"
+              >
+                <Plus className="h-4 w-4" /> Añadir material
+              </button>
+            )}
+          </div>
         }
       />
+      {importMsg && <p className="border-b border-ink-100 px-4 py-2 text-xs text-green-700">{importMsg}</p>}
 
       {adding && (
         <form onSubmit={onAdd} className="space-y-2 border-b border-ink-100 bg-brand-50/40 p-4">
