@@ -17,8 +17,8 @@ import {
 } from "lucide-react";
 import { getProject } from "@/lib/projects/queries";
 import { getProjectConversations } from "@/lib/conversations/queries";
-import { getProjectOperations } from "@/lib/operations/queries";
-import { OperationsTable } from "@/components/operations/OperationsTable";
+import { getProjectClientNotes } from "@/lib/projects/queries";
+import { ClientFollowUp } from "./ClientFollowUp";
 import { getProjectPurchases } from "@/lib/purchases/queries";
 import { purchaseTotals, purchasesCost, purchaseStatusInfo } from "@/lib/purchases/types";
 import { getProjectTimeEntries } from "@/lib/team/queries";
@@ -54,7 +54,7 @@ export default async function ObraDetallePage({
   const [
     project,
     conversations,
-    operations,
+    clientNotes,
     purchases,
     timeEntries,
     employeeOptions,
@@ -64,7 +64,7 @@ export default async function ObraDetallePage({
   ] = await Promise.all([
     getProject(id),
     getProjectConversations(id),
-    getProjectOperations(id),
+    getProjectClientNotes(id),
     getProjectPurchases(id),
     getProjectTimeEntries(id),
     getEmployeeOptions(),
@@ -365,18 +365,19 @@ export default async function ObraDetallePage({
         </Card>
       </div>
 
-      {/* Documentación de proveedores (operaciones documentales) */}
+      {/* Seguimiento directo con el cliente */}
       <div className="mt-5">
-        <Card>
-          <CardHeader title="Documentación de proveedores" />
-          <OperationsTable operations={operations} show="proveedor" />
-        </Card>
+        <ClientFollowUp
+          projectId={project.id}
+          notes={clientNotes}
+          customerName={project.customer?.name}
+        />
       </div>
 
       {/* Conversaciones / Seguimiento con proveedores */}
       <div className="mt-5">
         <Card>
-          <CardHeader title={`Conversaciones / Seguimiento (${conversations.length})`} />
+          <CardHeader title={`Conversaciones con proveedores (${conversations.length})`} />
           {conversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-6 py-8 text-center">
               <MessageSquare className="h-8 w-8 text-ink-300" />

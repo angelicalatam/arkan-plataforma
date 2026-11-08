@@ -385,3 +385,30 @@ export async function updateItemProgress(
   revalidatePath(`/obras/${projectId}`);
   return { ok: true };
 }
+
+// ---------------------------------------------------------------
+// SEGUIMIENTO CON EL CLIENTE (notas rápidas por obra)
+// ---------------------------------------------------------------
+export async function addProjectClientNote(
+  projectId: string,
+  input: { content: string; note_date?: string | null },
+): Promise<Result> {
+  if (!input.content?.trim()) return { ok: false, error: "La nota no puede estar vacía." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("project_client_notes").insert({
+    project_id: projectId,
+    content: input.content.trim(),
+    note_date: input.note_date || new Date().toISOString().slice(0, 10),
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/obras/${projectId}`);
+  return { ok: true };
+}
+
+export async function deleteProjectClientNote(id: string, projectId: string): Promise<Result> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("project_client_notes").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/obras/${projectId}`);
+  return { ok: true };
+}

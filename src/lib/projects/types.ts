@@ -171,3 +171,12 @@ export function projectProgress(items: ProjectItem[]): number {
   }
   return weight > 0 ? acc / weight : 0;
 }
+
+/** Nota rápida de seguimiento con el cliente de la obra. */
+export type ProjectClientNote = {
+  id: string;
+  project_id: string;
+  content: string;
+  note_date: string;
+  created_at: string;
+};

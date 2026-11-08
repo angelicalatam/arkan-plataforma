@@ -1,5 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Project, ProjectChapter } from "./types";
+import type { Project, ProjectChapter, ProjectClientNote } from "./types";
+
+/** Notas de seguimiento con el cliente de una obra (recientes primero). */
+export async function getProjectClientNotes(projectId: string): Promise<ProjectClientNote[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("project_client_notes")
+    .select("*")
+    .eq("project_id", projectId)
+    .order("note_date", { ascending: false })
+    .order("created_at", { ascending: false });
+  return (data as ProjectClientNote[]) ?? [];
+}
 
 /** Lista de obras con cliente y partidas (para totales y avance). */
 export async function getProjects(): Promise<Project[]> {
