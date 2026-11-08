@@ -30,7 +30,6 @@ import { getSupplierOptions } from "@/lib/crm/queries";
 import { ProjectLabor } from "./ProjectLabor";
 import { ProjectSchedule } from "./ProjectSchedule";
 import { MaterialNeeds } from "./MaterialNeeds";
-import { MaterialBudgetVsActual } from "./MaterialBudgetVsActual";
 import {
   projectStatusInfo,
   projectEconomics,
@@ -76,6 +75,30 @@ export default async function ObraDetallePage({
   if (!project) notFound();
 
   const materialCost = purchasesCost(purchases);
+
+  // Comparativa producto presupuestado vs comprado, por partida (match por nombre).
+  const purchasesByItem = new Map<string, number>();
+  let purchasesNoItem = 0;
+  for (const p of purchases) {
+    const sub = purchaseTotals(p).subtotal;
+    if (p.project_item_id) {
+      purchasesByItem.set(p.project_item_id, (purchasesByItem.get(p.project_item_id) ?? 0) + sub);
+    } else {
+      purchasesNoItem += sub;
+    }
+  }
+  const materialComparison: Record<string, { budget: number; real: number }> = {};
+  for (const ch of project.chapters ?? []) {
+    for (const it of ch.items ?? []) {
+      const key = (it.description ?? "").trim().toLowerCase();
+      if (!key) continue;
+      const budget = (Number(it.cost_products) || 0) * (Number(it.quantity) || 0);
+      const real = purchasesByItem.get(it.id) ?? 0;
+      const cur = materialComparison[key] ?? { budget: 0, real: 0 };
+      materialComparison[key] = { budget: cur.budget + budget, real: cur.real + real };
+    }
+  }
+
   const itemOptions = (project.chapters ?? [])
     .flatMap((c) => c.items ?? [])
     .map((it) => ({ id: it.id, code: it.code, description: it.description }));
@@ -300,6 +323,8 @@ export default async function ObraDetallePage({
           requests={materialRequests}
           materials={materialOptions}
           suppliers={supplierOptions}
+          comparison={materialComparison}
+          purchasesNoItem={purchasesNoItem}
         />
       </div>
 
@@ -364,11 +389,6 @@ export default async function ObraDetallePage({
             </div>
           )}
         </Card>
-      </div>
-
-      {/* Comparativa de materiales: presupuestado vs comprado */}
-      <div className="mt-5">
-        <MaterialBudgetVsActual projectId={project.id} items={allItems} purchases={purchases} />
       </div>
 
       {/* Seguimiento directo con el cliente */}

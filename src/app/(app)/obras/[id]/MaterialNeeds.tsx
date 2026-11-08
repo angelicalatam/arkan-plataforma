@@ -8,20 +8,33 @@ import { REQUEST_STATUSES, requestStatusInfo, type MaterialRequest, type Request
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { inputClass } from "@/components/ui/Form";
+import { formatCurrency } from "@/lib/format";
+import { UpdateCostsFromExcel } from "./UpdateCostsFromExcel";
 
 type MatOption = { id: string; name: string; unit: string | null; reference_price: number; supplier_id: string | null };
 type SupOption = { id: string; name: string };
+type Compare = { budget: number; real: number };
+
+function diffTone(diff: number): string {
+  if (diff > 0.005) return "text-red-600";
+  if (diff < -0.005) return "text-green-600";
+  return "text-ink-500";
+}
 
 export function MaterialNeeds({
   projectId,
   requests,
   materials,
   suppliers,
+  comparison,
+  purchasesNoItem,
 }: {
   projectId: string;
   requests: MaterialRequest[];
   materials: MatOption[];
   suppliers: SupOption[];
+  comparison: Record<string, Compare>;
+  purchasesNoItem: number;
 }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
@@ -198,17 +211,20 @@ export function MaterialNeeds({
         </form>
       )}
 
-      {requests.length === 0 ? (
+      {requests.length === 0 && purchasesNoItem === 0 ? (
         <p className="px-6 py-6 text-center text-sm text-ink-400">
           Sin materiales en la lista. Añade lo que hace falta para esta obra.
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-sm">
+          <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="border-b border-ink-100 text-left text-[11px] uppercase tracking-wider text-ink-500">
-                <th className="px-4 py-2 font-semibold">Material</th>
+                <th className="px-4 py-2 font-semibold">Material / partida</th>
                 <th className="px-4 py-2 text-right font-semibold">Cant.</th>
+                <th className="px-4 py-2 text-right font-semibold">Presupuestado</th>
+                <th className="px-4 py-2 text-right font-semibold">Comprado</th>
+                <th className="px-4 py-2 text-right font-semibold">Diferencia</th>
                 <th className="px-4 py-2 font-semibold">Proveedor</th>
                 <th className="px-4 py-2 font-semibold">Estado</th>
                 <th className="px-4 py-2"></th>
@@ -217,11 +233,25 @@ export function MaterialNeeds({
             <tbody>
               {requests.map((r) => {
                 const si = requestStatusInfo(r.status);
+                const cmp = comparison[(r.name ?? "").trim().toLowerCase()];
+                const budget = cmp?.budget ?? 0;
+                const real = cmp?.real ?? 0;
+                const diff = real - budget;
+                const hasData = budget > 0 || real > 0;
                 return (
                   <tr key={r.id} className="border-b border-ink-50 last:border-0 hover:bg-ink-50">
                     <td className="px-4 py-2 text-ink-800">{r.name}</td>
                     <td className="px-4 py-2 text-right text-ink-600">
                       {r.quantity} {r.unit}
+                    </td>
+                    <td className="px-4 py-2 text-right text-ink-600">
+                      {budget > 0 ? formatCurrency(budget) : "—"}
+                    </td>
+                    <td className="px-4 py-2 text-right text-ink-800">
+                      {real > 0 ? formatCurrency(real) : "—"}
+                    </td>
+                    <td className={`px-4 py-2 text-right font-medium ${hasData ? diffTone(diff) : "text-ink-400"}`}>
+                      {hasData ? `${diff > 0.005 ? "+" : ""}${formatCurrency(diff)}` : "—"}
                     </td>
                     <td className="px-4 py-2 text-ink-600">{r.supplier?.name || "—"}</td>
                     <td className="px-4 py-2">
@@ -249,10 +279,28 @@ export function MaterialNeeds({
                   </tr>
                 );
               })}
+              {purchasesNoItem > 0 && (
+                <tr className="border-b border-ink-50 hover:bg-ink-50">
+                  <td className="px-4 py-2 italic text-ink-500">Compras sin partida asignada</td>
+                  <td className="px-4 py-2"></td>
+                  <td className="px-4 py-2 text-right text-ink-400">—</td>
+                  <td className="px-4 py-2 text-right text-ink-800">{formatCurrency(purchasesNoItem)}</td>
+                  <td className="px-4 py-2 text-right text-ink-400">—</td>
+                  <td className="px-4 py-2"></td>
+                  <td className="px-4 py-2"></td>
+                  <td className="px-4 py-2"></td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       )}
+
+      <p className="border-t border-ink-100 px-4 py-2 text-[11px] text-ink-400">
+        Presupuestado = coste del producto del Excel (× cantidad), sin IVA. Comprado = compras
+        asignadas a esa partida. En rojo = más caro de lo previsto; en verde = ahorro.
+      </p>
+      <UpdateCostsFromExcel projectId={projectId} />
     </Card>
   );
 }
