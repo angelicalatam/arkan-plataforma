@@ -3,13 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Loader2, X, Trash2, Package, FileUp } from "lucide-react";
-import { addMaterialRequest, setRequestStatus, deleteMaterialRequest, importProductsFromExcel } from "@/lib/materials/actions";
+import { addMaterialRequest, setRequestStatus, deleteMaterialRequest, importProductsFromExcel, clearProjectMaterialRequests } from "@/lib/materials/actions";
 import { REQUEST_STATUSES, requestStatusInfo, type MaterialRequest, type RequestStatus } from "@/lib/materials/types";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { inputClass } from "@/components/ui/Form";
 import { formatCurrency } from "@/lib/format";
-import { UpdateCostsFromExcel } from "./UpdateCostsFromExcel";
 
 type MatOption = { id: string; name: string; unit: string | null; reference_price: number; supplier_id: string | null };
 type SupOption = { id: string; name: string };
@@ -124,12 +123,37 @@ export function MaterialNeeds({
     router.refresh();
   }
 
+  async function onClearAll() {
+    if (!window.confirm("¿Borrar TODOS los materiales de la lista de esta obra? Esta acción no se puede deshacer.")) return;
+    setImporting(true);
+    setImportMsg(null);
+    setError(null);
+    const res = await clearProjectMaterialRequests(projectId);
+    setImporting(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    setImportMsg("Lista vaciada. Ya puedes volver a traer los productos del Excel.");
+    router.refresh();
+  }
+
   return (
     <Card>
       <CardHeader
         title="Materiales necesarios"
         action={
           <div className="flex items-center gap-2">
+            {requests.length > 0 && (
+              <button
+                onClick={onClearAll}
+                disabled={importing}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
+                title="Borrar todos los materiales de la lista"
+              >
+                <Trash2 className="h-4 w-4" /> Vaciar lista
+              </button>
+            )}
             <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50">
               {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
               Traer productos del Excel
@@ -300,7 +324,6 @@ export function MaterialNeeds({
         Presupuestado = coste del producto del Excel (× cantidad), sin IVA. Comprado = compras
         asignadas a esa partida. En rojo = más caro de lo previsto; en verde = ahorro.
       </p>
-      <UpdateCostsFromExcel projectId={projectId} />
     </Card>
   );
 }

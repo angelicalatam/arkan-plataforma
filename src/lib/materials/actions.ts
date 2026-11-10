@@ -143,6 +143,16 @@ export async function deleteMaterialRequest(id: string, projectId: string): Prom
   return { ok: true };
 }
 
+/** Borra TODOS los materiales necesarios de una obra (vaciar la lista). */
+export async function clearProjectMaterialRequests(projectId: string): Promise<Result> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("material_requests").delete().eq("project_id", projectId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/materiales");
+  revalidatePath(`/obras/${projectId}`);
+  return { ok: true };
+}
+
 /**
  * Trae a "Materiales necesarios" todos los productos del Excel importado
  * (azulejo, mampara, sanitario…). Empareja por nombre para no duplicar:
