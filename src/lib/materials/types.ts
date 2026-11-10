@@ -72,6 +72,7 @@ export type MaterialRequest = {
   status: RequestStatus;
   supplier_id: string | null;
   notes: string | null;
+  budget_cost: number;
   created_at: string;
   updated_at: string;
   project?: { id: string; name: string | null; code: string | null } | null;

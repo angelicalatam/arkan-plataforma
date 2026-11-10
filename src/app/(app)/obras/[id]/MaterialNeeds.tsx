@@ -234,7 +234,7 @@ export function MaterialNeeds({
               {requests.map((r) => {
                 const si = requestStatusInfo(r.status);
                 const cmp = comparison[(r.name ?? "").trim().toLowerCase()];
-                const budget = cmp?.budget ?? 0;
+                const budget = Number(r.budget_cost) || 0;
                 const real = cmp?.real ?? 0;
                 const diff = real - budget;
                 const hasData = budget > 0 || real > 0;

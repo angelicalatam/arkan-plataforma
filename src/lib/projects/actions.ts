@@ -277,6 +277,7 @@ export async function importProjectFromExcel(
         quantity: it.quantity || 1,
         unit: it.unit || "ud",
         status: "por_pedir",
+        budget_cost: (Number(it.cost_products) || 0) * (Number(it.quantity) || 0),
         notes: null,
       });
     }
