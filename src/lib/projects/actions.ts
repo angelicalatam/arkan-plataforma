@@ -508,3 +508,20 @@ export async function updateProjectCostsFromExcel(
   revalidatePath(`/obras/${projectId}`);
   return { ok: true, updated, unmatched };
 }
+
+/** Guarda el coste REAL de mano de obra y/o materiales de una partida. */
+export async function updateItemReal(
+  itemId: string,
+  projectId: string,
+  input: { real_labor?: number; real_materials?: number },
+): Promise<Result> {
+  const supabase = await createClient();
+  const patch: Record<string, unknown> = {};
+  if (input.real_labor !== undefined) patch.real_labor = Number(input.real_labor) || 0;
+  if (input.real_materials !== undefined) patch.real_materials = Number(input.real_materials) || 0;
+  if (Object.keys(patch).length === 0) return { ok: true };
+  const { error } = await supabase.from("project_items").update(patch).eq("id", itemId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/obras/${projectId}`);
+  return { ok: true };
+}

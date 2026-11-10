@@ -108,6 +108,8 @@ export type ProjectItem = {
   cost_products: number;
   cost_other: number;
   margin_pct: number;
+  real_labor: number;
+  real_materials: number;
   est_hours: number | null;
   est_workers: number | null;
   pct_done: number;

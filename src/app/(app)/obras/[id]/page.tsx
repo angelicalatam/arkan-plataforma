@@ -30,6 +30,7 @@ import { getSupplierOptions } from "@/lib/crm/queries";
 import { ProjectLabor } from "./ProjectLabor";
 import { ProjectSchedule } from "./ProjectSchedule";
 import { MaterialNeeds } from "./MaterialNeeds";
+import { LaborCostControl } from "./LaborCostControl";
 import {
   projectStatusInfo,
   projectEconomics,
@@ -333,6 +334,11 @@ export default async function ObraDetallePage({
           suppliers={supplierOptions}
           items={itemOptions}
         />
+      </div>
+
+      {/* Mano de obra y materiales: presupuestado vs real (por partida) */}
+      <div className="mt-5">
+        <LaborCostControl projectId={project.id} items={allItems} />
       </div>
 
       {/* Materiales necesarios */}
