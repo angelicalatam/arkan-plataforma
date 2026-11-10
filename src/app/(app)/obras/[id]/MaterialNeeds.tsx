@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Loader2, X, Trash2, Package, FileUp } from "lucide-react";
 import { addMaterialRequest, setRequestStatus, deleteMaterialRequest, importProductsFromExcel, clearProjectMaterialRequests } from "@/lib/materials/actions";
 import { REQUEST_STATUSES, requestStatusInfo, type MaterialRequest, type RequestStatus } from "@/lib/materials/types";
+import { purchaseStatusInfo } from "@/lib/purchases/types";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { inputClass } from "@/components/ui/Form";
@@ -12,7 +13,7 @@ import { formatCurrency } from "@/lib/format";
 
 type MatOption = { id: string; name: string; unit: string | null; reference_price: number; supplier_id: string | null };
 type SupOption = { id: string; name: string };
-type Compare = { budget: number; real: number };
+type Compare = { budget: number; real: number; supplierName: string | null; status: string | null };
 
 function diffTone(diff: number): string {
   if (diff > 0.005) return "text-red-600";
@@ -277,23 +278,37 @@ export function MaterialNeeds({
                     <td className={`px-4 py-2 text-right font-medium ${hasData ? diffTone(diff) : "text-ink-400"}`}>
                       {hasData ? `${diff > 0.005 ? "+" : ""}${formatCurrency(diff)}` : "—"}
                     </td>
-                    <td className="px-4 py-2 text-ink-600">{r.supplier?.name || "—"}</td>
+                    <td className="px-4 py-2 text-ink-600">
+                      {cmp?.supplierName || r.supplier?.name || "—"}
+                    </td>
                     <td className="px-4 py-2">
-                      <select
-                        value={r.status}
-                        onChange={(e) => onStatus(r, e.target.value as RequestStatus)}
-                        className="rounded-lg border border-ink-200 bg-white px-2 py-1 text-xs text-ink-700"
-                        title="Cambiar estado"
-                      >
-                        {REQUEST_STATUSES.map((s) => (
-                          <option key={s.value} value={s.value}>
-                            {s.label}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="ml-2 hidden sm:inline-block align-middle">
-                        <Badge tone={si.tone}>{si.label}</Badge>
-                      </span>
+                      {cmp?.status ? (
+                        // Hay compra para esta partida: el estado viene de la compra.
+                        <span className="inline-flex items-center gap-1.5" title="Estado tomado de la compra">
+                          <Badge tone={purchaseStatusInfo(cmp.status).tone}>
+                            {purchaseStatusInfo(cmp.status).label}
+                          </Badge>
+                          <span className="text-[10px] uppercase tracking-wide text-ink-400">compra</span>
+                        </span>
+                      ) : (
+                        <>
+                          <select
+                            value={r.status}
+                            onChange={(e) => onStatus(r, e.target.value as RequestStatus)}
+                            className="rounded-lg border border-ink-200 bg-white px-2 py-1 text-xs text-ink-700"
+                            title="Cambiar estado"
+                          >
+                            {REQUEST_STATUSES.map((s) => (
+                              <option key={s.value} value={s.value}>
+                                {s.label}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="ml-2 hidden sm:inline-block align-middle">
+                            <Badge tone={si.tone}>{si.label}</Badge>
+                          </span>
+                        </>
+                      )}
                     </td>
                     <td className="px-4 py-2 text-right">
                       <button onClick={() => onDelete(r)} className="rounded p-1.5 text-ink-400 hover:bg-red-50 hover:text-red-600" title="Eliminar">

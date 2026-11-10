@@ -76,26 +76,45 @@ export default async function ObraDetallePage({
 
   const materialCost = purchasesCost(purchases);
 
-  // Comparativa producto presupuestado vs comprado, por partida (match por nombre).
+  // Comparativa por partida (match por nombre): presupuestado vs comprado,
+  // y proveedor/estado tomados de la compra más avanzada de esa partida.
   const purchasesByItem = new Map<string, number>();
+  const bestByItem = new Map<string, { rank: number; supplierName: string | null; status: string }>();
+  const STATUS_RANK: Record<string, number> = {
+    cancelado: -1, pendiente: 0, solicitado: 1, pedido: 2, en_transito: 3, parcial: 4, recibido: 5,
+  };
   let purchasesNoItem = 0;
   for (const p of purchases) {
     const sub = purchaseTotals(p).subtotal;
     if (p.project_item_id) {
       purchasesByItem.set(p.project_item_id, (purchasesByItem.get(p.project_item_id) ?? 0) + sub);
+      const rank = STATUS_RANK[p.status] ?? 0;
+      const cur = bestByItem.get(p.project_item_id);
+      if (!cur || rank > cur.rank) {
+        bestByItem.set(p.project_item_id, { rank, supplierName: p.supplier?.name ?? null, status: p.status });
+      }
     } else {
       purchasesNoItem += sub;
     }
   }
-  const materialComparison: Record<string, { budget: number; real: number }> = {};
+  const materialComparison: Record<
+    string,
+    { budget: number; real: number; supplierName: string | null; status: string | null }
+  > = {};
   for (const ch of project.chapters ?? []) {
     for (const it of ch.items ?? []) {
       const key = (it.description ?? "").trim().toLowerCase();
       if (!key) continue;
       const budget = (Number(it.cost_products) || 0) * (Number(it.quantity) || 0);
       const real = purchasesByItem.get(it.id) ?? 0;
-      const cur = materialComparison[key] ?? { budget: 0, real: 0 };
-      materialComparison[key] = { budget: cur.budget + budget, real: cur.real + real };
+      const best = bestByItem.get(it.id);
+      const cur = materialComparison[key] ?? { budget: 0, real: 0, supplierName: null, status: null };
+      materialComparison[key] = {
+        budget: cur.budget + budget,
+        real: cur.real + real,
+        supplierName: cur.supplierName ?? best?.supplierName ?? null,
+        status: cur.status ?? best?.status ?? null,
+      };
     }
   }
 
