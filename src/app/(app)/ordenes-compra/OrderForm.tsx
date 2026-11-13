@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Save, Plus, Trash2 } from "lucide-react";
+import { Loader2, Save, Plus, Trash2, FileSpreadsheet } from "lucide-react";
 import {
   createPurchaseOrder,
   updatePurchaseOrder,
+  parseOrderLinesFromExcel,
   type OrderInput,
   type OrderLineInput,
 } from "@/lib/purchase-orders/actions";
@@ -80,6 +81,41 @@ export function OrderForm({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Importar líneas desde el Excel.
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+
+  async function onImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permite volver a elegir el mismo archivo
+    if (!file) return;
+    setImporting(true);
+    setImportMsg(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await parseOrderLinesFromExcel(fd);
+    setImporting(false);
+    if (!res.ok) {
+      setImportMsg(res.error);
+      return;
+    }
+    const imported: Line[] = res.lines.map((l) => ({
+      key: `l${counter++}`,
+      description: l.description,
+      quantity: String(l.quantity ?? ""),
+      unit: l.unit || "ud",
+      unit_price: l.unit_price ? String(l.unit_price) : "",
+    }));
+    // Conserva las líneas que ya tengan descripción y añade las nuevas.
+    setLines((ls) => {
+      const kept = ls.filter((l) => l.description.trim());
+      const next = [...kept, ...imported];
+      return next.length > 0 ? next : [newLine()];
+    });
+    setImportMsg(`Se añadieron ${imported.length} línea(s) del Excel.`);
+  }
 
   function set<K extends keyof OrderInput>(key: K, value: OrderInput[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -199,6 +235,30 @@ export function OrderForm({
 
       <FormSection title="Líneas de material">
         <div className="col-span-full space-y-2">
+          {/* Importar desde Excel */}
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".xls,.xlsx"
+              className="hidden"
+              onChange={onImportFile}
+            />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={importing}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50 disabled:opacity-60"
+            >
+              {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+              Traer productos del Excel
+            </button>
+            {importMsg && <span className="text-xs text-ink-500">{importMsg}</span>}
+          </div>
+          <p className="text-[11px] text-ink-400">
+            Añade una línea por cada partida con producto del Excel (nombre, cantidad y precio del coste; puedes editarlos).
+          </p>
+
           {/* Cabecera (escritorio) */}
           <div className="hidden gap-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-ink-500 sm:grid sm:grid-cols-[1fr_5rem_4rem_7rem_6rem_2rem]">
             <span>Descripción</span>

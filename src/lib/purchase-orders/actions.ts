@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { parseQuoteWorkbook } from "@/lib/quotes/import";
 import type { OrderStatus } from "./types";
 
 type Result = { ok: true; id?: string } | { ok: false; error: string };
@@ -100,6 +101,53 @@ export async function updatePurchaseOrder(
   revalidatePath("/ordenes-compra");
   revalidatePath(`/ordenes-compra/${id}`);
   return { ok: true, id };
+}
+
+/**
+ * Lee un Excel (el export de la app) y devuelve las líneas de material
+ * para rellenar una orden de compra: una línea por PARTIDA que tenga
+ * producto, nombrada con la partida, cantidad/unidad del Excel y el
+ * precio/ud = coste de los productos de esa partida (editable después).
+ * NO guarda nada: solo devuelve las líneas para añadirlas al formulario.
+ */
+export async function parseOrderLinesFromExcel(
+  formData: FormData,
+): Promise<{ ok: true; lines: OrderLineInput[] } | { ok: false; error: string }> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "No se recibió ningún archivo." };
+  }
+  let parsed;
+  try {
+    const buf = Buffer.from(await file.arrayBuffer());
+    parsed = parseQuoteWorkbook(buf);
+  } catch (e) {
+    return {
+      ok: false,
+      error: "No se pudo leer el Excel: " + (e instanceof Error ? e.message : String(e)),
+    };
+  }
+
+  const lines: OrderLineInput[] = [];
+  for (const ch of parsed.chapters) {
+    for (const it of ch.items) {
+      // Solo partidas con producto en el Excel.
+      if (!it.products || it.products.length === 0) continue;
+      const nm = (it.description ?? "").trim();
+      if (!nm) continue;
+      lines.push({
+        description: nm,
+        quantity: Number(it.quantity) || 1,
+        unit: it.unit || "ud",
+        unit_price: Number(it.cost_products) || 0,
+      });
+    }
+  }
+
+  if (lines.length === 0) {
+    return { ok: false, error: "El Excel no tiene partidas con producto para traer." };
+  }
+  return { ok: true, lines };
 }
 
 export async function deletePurchaseOrder(id: string): Promise<Result> {
