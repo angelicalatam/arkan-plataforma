@@ -18,8 +18,14 @@ import {
 import { inputClass, FormSection, Field } from "@/components/ui/Form";
 import { formatCurrency } from "@/lib/format";
 
-type Option = { id: string; name: string | null; code?: string | null };
+type Option = { id: string; name: string | null; code?: string | null; address?: string | null };
 type Line = { key: string; description: string; quantity: string; unit: string; unit_price: string };
+
+/** Texto a número: acepta coma o punto como decimal; vacío = 0. */
+function num(v: string): number {
+  const n = Number((v || "").replace(",", ".").trim());
+  return Number.isFinite(n) ? n : 0;
+}
 
 /** Unidades de medida más habituales en reformas. */
 const UNITS = [
@@ -79,6 +85,17 @@ export function OrderForm({
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  /** Al elegir obra: guarda la obra y trae su dirección como dirección de entrega. */
+  function onProjectChange(projectId: string) {
+    const addr = projects.find((p) => p.id === projectId)?.address?.trim() ?? "";
+    setForm((f) => ({
+      ...f,
+      project_id: projectId,
+      // Rellena la dirección si está vacía o si la anterior venía de otra obra.
+      delivery_address: addr || f.delivery_address || "",
+    }));
+  }
+
   function setLine(key: string, patch: Partial<Line>) {
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
   }
@@ -90,7 +107,7 @@ export function OrderForm({
   }
 
   const totals = orderTotals(
-    lines.map((l) => ({ quantity: Number(l.quantity) || 0, unit_price: Number(l.unit_price) || 0 })),
+    lines.map((l) => ({ quantity: num(l.quantity), unit_price: num(l.unit_price) })),
     Number(form.tax_rate) || 0,
   );
 
@@ -109,9 +126,9 @@ export function OrderForm({
     const payload: OrderInput = { ...form, tax_rate: Number(form.tax_rate) || 0 };
     const cleanLines: OrderLineInput[] = lines.map((l) => ({
       description: l.description,
-      quantity: Number(l.quantity) || 0,
+      quantity: num(l.quantity),
       unit: l.unit || "ud",
-      unit_price: Number(l.unit_price) || 0,
+      unit_price: num(l.unit_price),
     }));
     const res = editing
       ? await updatePurchaseOrder(order!.id, payload, cleanLines)
@@ -143,7 +160,7 @@ export function OrderForm({
           </select>
         </Field>
         <Field label="Obra (opcional)">
-          <select className={inputClass} value={form.project_id ?? ""} onChange={(e) => set("project_id", e.target.value)}>
+          <select className={inputClass} value={form.project_id ?? ""} onChange={(e) => onProjectChange(e.target.value)}>
             <option value="">— Sin obra —</option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
@@ -173,6 +190,7 @@ export function OrderForm({
         </Field>
         <Field label="Dirección de entrega" full>
           <input className={inputClass} value={form.delivery_address ?? ""} onChange={(e) => set("delivery_address", e.target.value)} placeholder="Dónde debe entregar el proveedor" />
+          <p className="mt-1 text-[11px] text-ink-400">Al elegir una obra se rellena con su dirección. Puedes cambiarla.</p>
         </Field>
         <Field label="Condiciones de pago" full>
           <input className={inputClass} value={form.payment_terms ?? ""} onChange={(e) => set("payment_terms", e.target.value)} placeholder="Ej. 30 días fecha factura" />
@@ -192,7 +210,7 @@ export function OrderForm({
           </div>
 
           {lines.map((l) => {
-            const sub = (Number(l.quantity) || 0) * (Number(l.unit_price) || 0);
+            const sub = num(l.quantity) * num(l.unit_price);
             return (
               <div key={l.key} className="grid grid-cols-1 gap-2 rounded-lg border border-ink-100 bg-white p-2 sm:grid-cols-[1fr_5rem_4rem_7rem_6rem_2rem] sm:items-center sm:border-0 sm:p-0">
                 <input
@@ -202,9 +220,8 @@ export function OrderForm({
                   placeholder="Material / concepto"
                 />
                 <input
-                  type="number"
-                  step="0.001"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   className={`${inputClass} text-right`}
                   value={l.quantity}
                   onChange={(e) => setLine(l.key, { quantity: e.target.value })}
@@ -223,9 +240,8 @@ export function OrderForm({
                   ))}
                 </select>
                 <input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   className={`${inputClass} text-right`}
                   value={l.unit_price}
                   onChange={(e) => setLine(l.key, { unit_price: e.target.value })}

@@ -39,13 +39,15 @@ export async function getProjectsByCustomer(customerId: string): Promise<Project
 }
 
 /** Lista ligera de obras para selects. */
-export async function getProjectOptions(): Promise<{ id: string; name: string; code: string | null }[]> {
+export async function getProjectOptions(): Promise<
+  { id: string; name: string; code: string | null; address: string | null }[]
+> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("projects")
-    .select("id, name, code")
+    .select("id, name, code, address")
     .order("created_at", { ascending: false });
-  return (data ?? []) as { id: string; name: string; code: string | null }[];
+  return (data ?? []) as { id: string; name: string; code: string | null; address: string | null }[];
 }
 
 export type DueReminder = {
