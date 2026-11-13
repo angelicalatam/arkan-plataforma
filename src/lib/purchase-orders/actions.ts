@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { parseQuoteWorkbook } from "@/lib/quotes/import";
-import type { OrderStatus } from "./types";
+import type { OrderStatus, OrderItemStatus } from "./types";
 
 type Result = { ok: true; id?: string } | { ok: false; error: string };
 
@@ -18,6 +18,7 @@ export type OrderLineInput = {
   quantity: number;
   unit: string | null;
   unit_price: number;
+  status?: OrderItemStatus;
 };
 
 export type OrderInput = {
@@ -41,6 +42,7 @@ function lineRows(orderId: string, lines: OrderLineInput[]) {
       quantity: Number(l.quantity) || 0,
       unit: l.unit || "ud",
       unit_price: Number(l.unit_price) || 0,
+      status: l.status ?? "pendiente",
       position: i,
     }));
 }
@@ -148,6 +150,22 @@ export async function parseOrderLinesFromExcel(
     return { ok: false, error: "El Excel no tiene partidas con producto para traer." };
   }
   return { ok: true, lines };
+}
+
+/** Cambia el estado de seguimiento de UNA línea (pendiente/comprado/transito/llegado). */
+export async function setOrderItemStatus(
+  itemId: string,
+  orderId: string,
+  status: OrderItemStatus,
+): Promise<Result> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("purchase_order_items")
+    .update({ status })
+    .eq("id", itemId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/ordenes-compra/${orderId}`);
+  return { ok: true };
 }
 
 export async function deletePurchaseOrder(id: string): Promise<Result> {

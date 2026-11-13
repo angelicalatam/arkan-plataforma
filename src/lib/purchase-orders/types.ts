@@ -23,6 +23,20 @@ export function orderStatusInfo(status: string) {
   return ORDER_STATUSES.find((s) => s.value === status) ?? ORDER_STATUSES[0];
 }
 
+/** Estado de seguimiento de cada producto/línea de la orden. */
+export type OrderItemStatus = "pendiente" | "comprado" | "transito" | "llegado";
+
+export const ORDER_ITEM_STATUSES: { value: OrderItemStatus; label: string; tone: Tone }[] = [
+  { value: "pendiente", label: "Pendiente por pedir", tone: "amber" },
+  { value: "comprado", label: "Comprado", tone: "blue" },
+  { value: "transito", label: "En tránsito", tone: "brand" },
+  { value: "llegado", label: "Llegado", tone: "green" },
+];
+
+export function orderItemStatusInfo(status: string) {
+  return ORDER_ITEM_STATUSES.find((s) => s.value === status) ?? ORDER_ITEM_STATUSES[0];
+}
+
 export type PurchaseOrderItem = {
   id: string;
   order_id: string;
@@ -30,6 +44,7 @@ export type PurchaseOrderItem = {
   quantity: number;
   unit: string | null;
   unit_price: number;
+  status: OrderItemStatus;
   position: number;
 };
 

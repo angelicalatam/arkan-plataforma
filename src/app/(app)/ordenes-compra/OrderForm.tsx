@@ -12,15 +12,24 @@ import {
 } from "@/lib/purchase-orders/actions";
 import {
   ORDER_STATUSES,
+  ORDER_ITEM_STATUSES,
   orderTotals,
   type PurchaseOrder,
   type OrderStatus,
+  type OrderItemStatus,
 } from "@/lib/purchase-orders/types";
 import { inputClass, FormSection, Field } from "@/components/ui/Form";
 import { formatCurrency } from "@/lib/format";
 
 type Option = { id: string; name: string | null; code?: string | null; address?: string | null };
-type Line = { key: string; description: string; quantity: string; unit: string; unit_price: string };
+type Line = {
+  key: string;
+  description: string;
+  quantity: string;
+  unit: string;
+  unit_price: string;
+  status: OrderItemStatus;
+};
 
 /** Texto a número: acepta coma o punto como decimal; vacío = 0. */
 function num(v: string): number {
@@ -41,6 +50,7 @@ const newLine = (): Line => ({
   quantity: "1",
   unit: "ud",
   unit_price: "",
+  status: "pendiente",
 });
 
 export function OrderForm({
@@ -75,6 +85,7 @@ export function OrderForm({
           quantity: String(it.quantity ?? ""),
           unit: it.unit ?? "ud",
           unit_price: String(it.unit_price ?? ""),
+          status: (it.status as OrderItemStatus) ?? "pendiente",
         }))
       : [newLine()],
   );
@@ -107,6 +118,7 @@ export function OrderForm({
       quantity: String(l.quantity ?? ""),
       unit: l.unit || "ud",
       unit_price: l.unit_price ? String(l.unit_price) : "",
+      status: "pendiente",
     }));
     // Conserva las líneas que ya tengan descripción y añade las nuevas.
     setLines((ls) => {
@@ -165,6 +177,7 @@ export function OrderForm({
       quantity: num(l.quantity),
       unit: l.unit || "ud",
       unit_price: num(l.unit_price),
+      status: l.status,
     }));
     const res = editing
       ? await updatePurchaseOrder(order!.id, payload, cleanLines)
@@ -260,19 +273,20 @@ export function OrderForm({
           </p>
 
           {/* Cabecera (escritorio) */}
-          <div className="hidden gap-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-ink-500 sm:grid sm:grid-cols-[1fr_5rem_4rem_7rem_6rem_2rem]">
+          <div className="hidden gap-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-ink-500 sm:grid sm:grid-cols-[1fr_4.5rem_3.5rem_6rem_6rem_9rem_2rem]">
             <span>Descripción</span>
             <span className="text-right">Cantidad</span>
             <span>Unidad</span>
             <span className="text-right">Precio/ud</span>
             <span className="text-right">Importe</span>
+            <span>Estado</span>
             <span />
           </div>
 
           {lines.map((l) => {
             const sub = num(l.quantity) * num(l.unit_price);
             return (
-              <div key={l.key} className="grid grid-cols-1 gap-2 rounded-lg border border-ink-100 bg-white p-2 sm:grid-cols-[1fr_5rem_4rem_7rem_6rem_2rem] sm:items-center sm:border-0 sm:p-0">
+              <div key={l.key} className="grid grid-cols-1 gap-2 rounded-lg border border-ink-100 bg-white p-2 sm:grid-cols-[1fr_4.5rem_3.5rem_6rem_6rem_9rem_2rem] sm:items-center sm:border-0 sm:p-0">
                 <input
                   className={inputClass}
                   value={l.description}
@@ -308,6 +322,18 @@ export function OrderForm({
                   placeholder="0,00"
                 />
                 <span className="text-right text-sm font-medium text-ink-800">{formatCurrency(sub)}</span>
+                <select
+                  className={inputClass}
+                  value={l.status}
+                  onChange={(e) => setLine(l.key, { status: e.target.value as OrderItemStatus })}
+                  title="Estado del producto"
+                >
+                  {ORDER_ITEM_STATUSES.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
                 <button
                   type="button"
                   onClick={() => removeLine(l.key)}

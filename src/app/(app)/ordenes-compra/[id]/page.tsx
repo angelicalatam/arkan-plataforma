@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DeleteOrderButton } from "./DeleteOrderButton";
+import { OrderItemStatusSelect } from "./OrderItemStatusSelect";
 
 export default async function OrdenDetallePage({
   params,
@@ -110,12 +111,13 @@ export default async function OrdenDetallePage({
                 <th className="px-4 py-2 font-semibold">Ud.</th>
                 <th className="px-4 py-2 text-right font-semibold">Precio/ud</th>
                 <th className="px-4 py-2 text-right font-semibold">Importe</th>
+                <th className="px-4 py-2 font-semibold">Estado</th>
               </tr>
             </thead>
             <tbody>
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-ink-400">
+                  <td colSpan={6} className="px-4 py-6 text-center text-ink-400">
                     Esta orden no tiene líneas.
                   </td>
                 </tr>
@@ -127,6 +129,9 @@ export default async function OrdenDetallePage({
                     <td className="px-4 py-2 text-ink-500">{it.unit}</td>
                     <td className="px-4 py-2 text-right text-ink-600">{formatCurrency(it.unit_price)}</td>
                     <td className="px-4 py-2 text-right font-medium text-ink-800">{formatCurrency(lineSubtotal(it))}</td>
+                    <td className="px-4 py-2">
+                      <OrderItemStatusSelect itemId={it.id} orderId={order.id} status={it.status} />
+                    </td>
                   </tr>
                 ))
               )}
