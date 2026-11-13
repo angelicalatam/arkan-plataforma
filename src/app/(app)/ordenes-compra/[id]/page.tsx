@@ -1,14 +1,16 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Pencil, Printer, Building2, MapPin } from "lucide-react";
+import { ArrowLeft, Pencil, Printer, Building2, MapPin, FileText } from "lucide-react";
 import { getPurchaseOrder } from "@/lib/purchase-orders/queries";
 import { orderTotals, orderStatusInfo, lineSubtotal } from "@/lib/purchase-orders/types";
+import { getOrderRequestsByOrder } from "@/lib/order-requests/queries";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DeleteOrderButton } from "./DeleteOrderButton";
 import { OrderItemStatusSelect } from "./OrderItemStatusSelect";
+import { GeneratePedidoButton } from "./GeneratePedidoButton";
 
 export default async function OrdenDetallePage({
   params,
@@ -22,6 +24,7 @@ export default async function OrdenDetallePage({
   const items = order.items ?? [];
   const t = orderTotals(items, order.tax_rate);
   const si = orderStatusInfo(order.status);
+  const pedidos = await getOrderRequestsByOrder(order.id);
   const supplier = order.supplier as
     | { id: string; name: string; legal_name?: string | null; tax_id?: string | null; email?: string | null; phone?: string | null }
     | null;
@@ -143,6 +146,50 @@ export default async function OrdenDetallePage({
           <span className="text-ink-500">IVA ({order.tax_rate}%): <strong className="text-ink-800">{formatCurrency(t.tax)}</strong></span>
           <span className="text-base text-ink-900">Total: <strong className="text-brand-700">{formatCurrency(t.total)}</strong></span>
         </div>
+      </Card>
+
+      <Card className="mt-5">
+        <div className="flex flex-col gap-3 border-b border-ink-100 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-ink-900">Pedidos a proveedor</h3>
+            <p className="mt-0.5 text-xs text-ink-500">
+              Genera un documento de solicitud editable con los materiales de esta orden (sin cambiar la orden).
+            </p>
+          </div>
+          <GeneratePedidoButton orderId={order.id} />
+        </div>
+        {pedidos.length === 0 ? (
+          <p className="px-4 py-6 text-center text-sm text-ink-400">
+            Aún no has generado ningún pedido para esta orden.
+          </p>
+        ) : (
+          <ul className="divide-y divide-ink-50">
+            {pedidos.map((p) => {
+              const sup = p.supplier as { name?: string } | null;
+              const n = p.items?.length ?? 0;
+              return (
+                <li key={p.id}>
+                  <Link
+                    href={`/ordenes-compra/${order.id}/pedidos/${p.id}` as Route}
+                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-ink-50"
+                  >
+                    <span className="flex items-center gap-2.5 text-sm">
+                      <FileText className="h-4 w-4 shrink-0 text-brand-600" />
+                      <span>
+                        <span className="font-medium text-ink-900">{p.code || "Pedido"}</span>
+                        <span className="text-ink-500">
+                          {" "}
+                          · {sup?.name || "Sin proveedor"} · {n} material{n === 1 ? "" : "es"}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-xs text-ink-400">{formatDate(p.created_at)}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </Card>
 
       {order.notes && (
