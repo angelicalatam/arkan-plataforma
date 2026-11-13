@@ -10,6 +10,7 @@ export type OrderRequestLineInput = {
   quantity: number;
   unit: string | null;
   observations: string | null;
+  reference_price: number;
 };
 
 export type OrderRequestInput = {
@@ -28,6 +29,7 @@ function itemRows(requestId: string, lines: OrderRequestLineInput[]) {
       quantity: Number(l.quantity) || 0,
       unit: l.unit || "ud",
       observations: (l.observations ?? "").trim() || null,
+      reference_price: Number(l.reference_price) || 0,
       position: i,
     }));
 }
@@ -43,7 +45,7 @@ export async function createOrderRequestFromOrder(orderId: string): Promise<Resu
   const { data: order, error: oe } = await supabase
     .from("purchase_orders")
     .select(
-      "id, supplier_id, project_id, delivery_address, items:purchase_order_items(description, quantity, unit, position)",
+      "id, supplier_id, project_id, delivery_address, items:purchase_order_items(description, quantity, unit, unit_price, position)",
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -77,6 +79,7 @@ export async function createOrderRequestFromOrder(orderId: string): Promise<Resu
     description: string;
     quantity: number;
     unit: string | null;
+    unit_price: number | null;
     position: number;
   }[])
     .slice()
@@ -89,6 +92,7 @@ export async function createOrderRequestFromOrder(orderId: string): Promise<Resu
       quantity: it.quantity,
       unit: it.unit,
       observations: null,
+      reference_price: it.unit_price ?? 0,
     })),
   );
   if (rows.length > 0) {

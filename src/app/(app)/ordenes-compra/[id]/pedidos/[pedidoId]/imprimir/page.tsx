@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getOrderRequest } from "@/lib/order-requests/queries";
 import { CONFIRM_NOTE } from "@/lib/order-requests/types";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatCurrency } from "@/lib/format";
 import { PrintButton } from "../../../imprimir/PrintButton";
 
 /** Paleta corporativa ARKAN (negro + dorado). */
@@ -169,6 +169,7 @@ export default async function ImprimirPedidoPage({
               <th className="px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider">Descripción</th>
               <th className="px-3 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider">Cant.</th>
               <th className="px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider">Ud.</th>
+              <th className="px-3 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider">Precio máx.</th>
               <th className="px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider">Observaciones</th>
             </tr>
           </thead>
@@ -187,6 +188,9 @@ export default async function ImprimirPedidoPage({
                 <td className="px-3 py-2 align-top" style={{ color: ARKAN.gray, borderBottom: `1px solid ${ARKAN.line}` }}>
                   {it.unit}
                 </td>
+                <td className="px-3 py-2 text-right align-top" style={{ color: ARKAN.ink, borderBottom: `1px solid ${ARKAN.line}` }}>
+                  {it.reference_price > 0 ? formatCurrency(it.reference_price) : "—"}
+                </td>
                 <td className="px-3 py-2 align-top" style={{ color: ARKAN.ink, borderBottom: `1px solid ${ARKAN.line}` }}>
                   {it.observations || ""}
                 </td>
@@ -194,6 +198,10 @@ export default async function ImprimirPedidoPage({
             ))}
           </tbody>
         </table>
+
+        <p className="mt-2 text-[11px] italic" style={{ color: ARKAN.gray }}>
+          * El precio máximo es orientativo (precio de referencia). Rogamos coticen su mejor oferta.
+        </p>
 
         {/* Observaciones generales */}
         {request.general_notes && (

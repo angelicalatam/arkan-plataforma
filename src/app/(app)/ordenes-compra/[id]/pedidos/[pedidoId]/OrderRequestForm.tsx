@@ -23,6 +23,7 @@ type Line = {
   description: string;
   quantity: string;
   unit: string;
+  referencePrice: string;
   observations: string;
 };
 
@@ -38,6 +39,7 @@ const newLine = (): Line => ({
   description: "",
   quantity: "1",
   unit: "ud",
+  referencePrice: "",
   observations: "",
 });
 
@@ -64,6 +66,7 @@ export function OrderRequestForm({
           description: it.description,
           quantity: String(it.quantity ?? ""),
           unit: it.unit ?? "ud",
+          referencePrice: it.reference_price ? String(it.reference_price) : "",
           observations: it.observations ?? "",
         }))
       : [newLine()],
@@ -101,6 +104,7 @@ export function OrderRequestForm({
       quantity: num(l.quantity),
       unit: l.unit || "ud",
       observations: l.observations,
+      reference_price: num(l.referencePrice),
     }));
     const res = await updateOrderRequest(
       request.id,
@@ -246,12 +250,17 @@ export function OrderRequestForm({
 
       <FormSection title="Materiales a solicitar">
         <div className="col-span-full space-y-2">
+          <p className="text-xs text-ink-500">
+            <strong>Precio ref.</strong> es el precio máximo (traído de la orden) al que el proveedor
+            puede cotizar. Aparece en el PDF para orientar su oferta.
+          </p>
           {/* Cabecera (escritorio) */}
-          <div className="hidden gap-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-ink-500 sm:grid sm:grid-cols-[2rem_1fr_4.5rem_3.5rem_1fr_2rem]">
+          <div className="hidden gap-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-ink-500 sm:grid sm:grid-cols-[2rem_1fr_4.5rem_3.5rem_6rem_1fr_2rem]">
             <span>N.º</span>
             <span>Descripción</span>
             <span className="text-right">Cantidad</span>
             <span>Unidad</span>
+            <span className="text-right">Precio ref.</span>
             <span>Observaciones</span>
             <span />
           </div>
@@ -259,7 +268,7 @@ export function OrderRequestForm({
           {lines.map((l, i) => (
             <div
               key={l.key}
-              className="grid grid-cols-1 gap-2 rounded-lg border border-ink-100 bg-white p-2 sm:grid-cols-[2rem_1fr_4.5rem_3.5rem_1fr_2rem] sm:items-center sm:border-0 sm:p-0"
+              className="grid grid-cols-1 gap-2 rounded-lg border border-ink-100 bg-white p-2 sm:grid-cols-[2rem_1fr_4.5rem_3.5rem_6rem_1fr_2rem] sm:items-center sm:border-0 sm:p-0"
             >
               <span className="text-sm font-medium text-ink-400 sm:text-center">{i + 1}</span>
               <input
@@ -288,6 +297,15 @@ export function OrderRequestForm({
                   </option>
                 ))}
               </select>
+              <input
+                type="text"
+                inputMode="decimal"
+                className={`${inputClass} text-right`}
+                value={l.referencePrice}
+                onChange={(e) => setLine(l.key, { referencePrice: e.target.value })}
+                placeholder="Precio máx."
+                title="Precio de referencia (máximo al que puede cotizar el proveedor)"
+              />
               <input
                 className={inputClass}
                 value={l.observations}

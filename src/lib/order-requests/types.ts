@@ -9,6 +9,7 @@ export type OrderRequestItem = {
   quantity: number;
   unit: string | null;
   observations: string | null;
+  reference_price: number;
   position: number;
 };
 
