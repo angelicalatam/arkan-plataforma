@@ -140,12 +140,12 @@ export function OrderRequestForm({
   }
 
   function onPrepareEmail() {
-    const subject = `Pedido de materiales ${request.code ?? ""} — ARKAN Reformas`.trim();
+    const subject = `Solicitud de cotización y disponibilidad ${request.code ?? ""} — ARKAN Reformas`.trim();
     const bodyLines = [
       "Buen día,",
       "",
       "Le escribe Angelica de ARKAN REFORMAS, S.L.",
-      "Adjuntamos el pedido de materiales (documento PDF) para su gestión.",
+      "Adjuntamos la solicitud de cotización y disponibilidad (documento PDF) para su gestión.",
       "",
       CONFIRM_NOTE,
       "",

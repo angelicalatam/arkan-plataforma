@@ -91,8 +91,8 @@ export default async function ImprimirPedidoPage({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-arkan.jpg" alt={COMPANY.name} className="h-20 w-auto" />
           <div className="text-right">
-            <p className="text-2xl font-black tracking-tight" style={{ color: ARKAN.black }}>
-              PEDIDO DE MATERIALES
+            <p className="text-xl font-black tracking-tight" style={{ color: ARKAN.black }}>
+              SOLICITUD DE COTIZACIÓN Y DISPONIBILIDAD
             </p>
             <p className="text-sm font-bold" style={{ color: ARKAN.goldDark }}>
               {request.code}
