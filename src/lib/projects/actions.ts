@@ -14,6 +14,26 @@ function clean<T extends Record<string, unknown>>(obj: T): T {
   return out as T;
 }
 
+/**
+ * Siguiente código de obra OBRA-000N.
+ * Toma el número MÁS ALTO que ya existe y le suma 1 (en vez de contar filas),
+ * para que borrar una obra del medio no haga que se repita un número.
+ */
+async function nextProjectCode(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<string> {
+  const { data } = await supabase.from("projects").select("code").ilike("code", "OBRA-%");
+  let max = 0;
+  for (const row of (data ?? []) as { code: string | null }[]) {
+    const m = (row.code ?? "").match(/OBRA-(\d+)/i);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (Number.isFinite(n) && n > max) max = n;
+    }
+  }
+  return `OBRA-${String(max + 1).padStart(4, "0")}`;
+}
+
 // ---------------------------------------------------------------
 // CONVERTIR PRESUPUESTO EN OBRA (Fase 4)
 // ---------------------------------------------------------------
@@ -42,11 +62,8 @@ export async function convertQuoteToProject(quoteId: string): Promise<Result> {
   ) as Parameters<typeof itemTotals>[0][];
   const contractValue = allItems.reduce((sum, it) => sum + itemTotals(it).lineSale, 0);
 
-  // Numeración OBRA-000N.
-  const { count } = await supabase
-    .from("projects")
-    .select("id", { count: "exact", head: true });
-  const code = `OBRA-${String((count ?? 0) + 1).padStart(4, "0")}`;
+  // Numeración OBRA-000N (número más alto + 1).
+  const code = await nextProjectCode(supabase);
 
   // Crear la obra.
   const { data: project, error: pErr } = await supabase
@@ -151,10 +168,7 @@ export type ProjectInput = {
 
 export async function createProject(input: ProjectInput): Promise<Result> {
   const supabase = await createClient();
-  const { count } = await supabase
-    .from("projects")
-    .select("id", { count: "exact", head: true });
-  const code = `OBRA-${String((count ?? 0) + 1).padStart(4, "0")}`;
+  const code = await nextProjectCode(supabase);
   const { data, error } = await supabase
     .from("projects")
     .insert(clean({ ...input, code, name: input.name || code }))
@@ -196,8 +210,7 @@ export async function importProjectFromExcel(
 
   const supabase = await createClient();
 
-  const { count } = await supabase.from("projects").select("id", { count: "exact", head: true });
-  const code = `OBRA-${String((count ?? 0) + 1).padStart(4, "0")}`;
+  const code = await nextProjectCode(supabase);
 
   const { data: project, error: pErr } = await supabase
     .from("projects")
