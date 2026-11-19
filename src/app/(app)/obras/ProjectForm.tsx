@@ -20,6 +20,12 @@ function customerAddress(c: CustomerOpt): string {
   return [c.address, c.postal_code, c.city, c.province].filter(Boolean).join(", ");
 }
 
+/** Texto a número: acepta coma o punto; vacío = 0. */
+function num(v: string): number {
+  const n = Number((v || "").replace(",", ".").trim());
+  return Number.isFinite(n) ? n : 0;
+}
+
 export function ProjectForm({
   project,
   customers,
@@ -40,6 +46,10 @@ export function ProjectForm({
     contract_value: project?.contract_value ?? 0,
     notes: project?.notes ?? "",
   });
+  // El importe se maneja como texto para no forzar el "0" a la izquierda.
+  const [contractValue, setContractValue] = useState(
+    project?.contract_value ? String(project.contract_value) : "",
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,7 +68,7 @@ export function ProjectForm({
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const payload = { ...form, contract_value: Number(form.contract_value) || 0 };
+    const payload = { ...form, contract_value: num(contractValue) };
     const res = editing
       ? await updateProject(project!.id, payload)
       : await createProject(payload);
@@ -104,11 +114,12 @@ export function ProjectForm({
         </Field>
         <Field label="Importe contratado (€)">
           <input
-            type="number"
-            step="0.01"
+            type="text"
+            inputMode="decimal"
             className={inputClass}
-            value={form.contract_value ?? 0}
-            onChange={(e) => set("contract_value", e.target.value === "" ? 0 : Number(e.target.value))}
+            value={contractValue}
+            onChange={(e) => setContractValue(e.target.value)}
+            placeholder="0"
           />
         </Field>
         <Field label="Dirección de la obra" full>
