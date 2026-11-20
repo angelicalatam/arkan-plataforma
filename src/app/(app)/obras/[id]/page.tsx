@@ -22,12 +22,10 @@ import { ClientFollowUp } from "./ClientFollowUp";
 import { getProjectPurchases } from "@/lib/purchases/queries";
 import { purchaseTotals, purchasesCost, purchaseStatusInfo } from "@/lib/purchases/types";
 import { getProjectTimeEntries } from "@/lib/team/queries";
-import { getEmployeeOptions } from "@/lib/team/queries";
 import { laborCost } from "@/lib/team/types";
 import { computeProfit } from "@/lib/profitability/types";
 import { getProjectMaterialRequests, getMaterialOptions } from "@/lib/materials/queries";
 import { getSupplierOptions } from "@/lib/crm/queries";
-import { ProjectLabor } from "./ProjectLabor";
 import { ProjectSchedule } from "./ProjectSchedule";
 import { MaterialNeeds } from "./MaterialNeeds";
 import { LaborCostControl } from "./LaborCostControl";
@@ -58,7 +56,6 @@ export default async function ObraDetallePage({
     clientNotes,
     purchases,
     timeEntries,
-    employeeOptions,
     materialRequests,
     materialOptions,
     supplierOptions,
@@ -68,7 +65,6 @@ export default async function ObraDetallePage({
     getProjectClientNotes(id),
     getProjectPurchases(id),
     getProjectTimeEntries(id),
-    getEmployeeOptions(),
     getProjectMaterialRequests(id),
     getMaterialOptions(),
     getSupplierOptions(),
@@ -119,9 +115,6 @@ export default async function ObraDetallePage({
     }
   }
 
-  const itemOptions = (project.chapters ?? [])
-    .flatMap((c) => c.items ?? [])
-    .map((it) => ({ id: it.id, code: it.code, description: it.description }));
 
   const chapters = project.chapters ?? [];
   const allItems = chapters.flatMap((c) => c.items ?? []);
@@ -322,17 +315,6 @@ export default async function ObraDetallePage({
           startPlanned={project.start_planned}
           endPlanned={project.end_planned}
           chapters={chapters}
-        />
-      </div>
-
-      {/* Mano de obra / Horas */}
-      <div className="mt-5">
-        <ProjectLabor
-          projectId={project.id}
-          entries={timeEntries}
-          employees={employeeOptions}
-          suppliers={supplierOptions}
-          items={itemOptions}
         />
       </div>
 
